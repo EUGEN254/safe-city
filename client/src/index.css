@@ -15,6 +15,7 @@ body {
   font-family: "Poppins", sans-serif;
   background-color: var(--color-dark);
   color: var(--color-text);
+  font-size: 16px;
 }
 
 /* SafeCity custom Tailwind-style utilities */
@@ -59,4 +60,7 @@ body::-webkit-scrollbar {
     transform: translateY(-6px);
   }
 }
+
+
+
 
