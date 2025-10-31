@@ -9,7 +9,7 @@ import {
 const Footer = () => {
   return (
     <footer
-      className="bg-safecity-surface text-safecity-muted py-10 px-8 md:px-20 mt-12"
+      className=" text-safecity-muted py-10 px-8 md:px-20 mt-12"
       id="footer"
     >
       <div className="grid grid-cols-1 md:grid-cols-4 gap-8">

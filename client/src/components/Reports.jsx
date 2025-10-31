@@ -96,7 +96,7 @@ const Reports = () => {
   };
 
   return (
-    <section className="py-4 px-4 md:p-22 text-safecity-text bg-safecity-dark" id="reports">
+    <section className="max-w-5xl mx-auto py-4 px-4 text-safecity-text" id="reports">
       {/* Heading */}
       <motion.div
         className="text-center mb-10"

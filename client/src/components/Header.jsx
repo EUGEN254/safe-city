@@ -34,11 +34,7 @@ const Header = ({ setShowLogin }) => {
 
       {/* ==== Right Side (Map Image) ==== */}
       <div className="mt-8 md:mt-0 md:w-1/2 flex justify-center">
-        <img
-          src={assets.map}
-          alt="City map showing incidents"
-          className="w-full max-w-sm md:max-w-lg h-auto max-h-[50vh] md:h-[70vh] rounded-xl md:rounded-2xl shadow-lg border border-safecity-surface hover:scale-105 transition-transform duration-500"
-        />
+      
       </div>
     </header>
   );
