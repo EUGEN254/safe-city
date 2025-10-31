@@ -31,6 +31,10 @@ body {
   background-color: var(--color-accent-hover);
 }
 
+.hover\:text-safecity-accent:hover {
+  color: var(--color-accent);
+}
+
 .text-safecity-text {
   color: var(--color-text);
 }
