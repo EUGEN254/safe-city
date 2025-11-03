@@ -4,6 +4,7 @@ import "dotenv/config";
 import cookieParser from "cookie-parser";
 import connectCloudinary from "./configs/cloudinary.js";
 import connectDB from "./configs/connectDB.js";
+import userRouter from "./routes/userRoutes.js";
 
 // .......express setup.......
 const app = express();
@@ -21,7 +22,12 @@ const allowedOrigins = (
 
 app.use(express.json({ limit: "4mb" }));
 app.use(cookieParser());
-app.use(cors({ origins: allowedOrigins, credentials: true }));
+app.use(
+  cors({
+    origin: allowedOrigins,
+    credentials: true,
+  })
+);
 
 // test route
 app.get("/", (req, res) => {
@@ -31,6 +37,7 @@ app.get("/", (req, res) => {
 });
 
 // Routes
+app.use("/api/user", userRouter);
 
 // connect MongoDb
 await connectDB();

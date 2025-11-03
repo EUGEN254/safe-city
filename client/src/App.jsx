@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Routes, Route } from "react-router-dom";
 import LandingPage from "./pages/LandingPage";
 import { ToastContainer, toast } from "react-toastify";
+import Layout from "./pages/Layout";
 
 const App = () => {
   return (
@@ -26,6 +27,8 @@ const App = () => {
       <Routes>
         {/* main route */}
         <Route path="/" element={<LandingPage />} />
+        <Route path="/dashboard" element={< Layout/>} />
+
         {/* other routes */}
       </Routes>
     </>

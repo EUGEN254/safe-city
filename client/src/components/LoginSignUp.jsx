@@ -1,6 +1,13 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { FaUser, FaLock, FaEnvelope, FaEye, FaEyeSlash, FaTimes } from "react-icons/fa";
+import { Link, useNavigate } from "react-router-dom";
+import {
+  FaUser,
+  FaLock,
+  FaEnvelope,
+  FaEye,
+  FaEyeSlash,
+  FaTimes,
+} from "react-icons/fa";
 import { MdSecurity } from "react-icons/md";
 import { toast } from "react-toastify";
 import axios from "axios";
@@ -30,7 +37,8 @@ const LoginSignUp = ({ showLogin, setShowLogin }) => {
     });
   }, [isLogin]);
 
-  const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
+  const handleChange = (e) =>
+    setFormData({ ...formData, [e.target.name]: e.target.value });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -50,7 +58,11 @@ const LoginSignUp = ({ showLogin, setShowLogin }) => {
       const endpoint = isLogin ? "/api/user/login" : "/api/user/register";
       const payload = isLogin
         ? { email: formData.email, password: formData.password, rememberMe }
-        : { fullname: formData.fullname, email: formData.email, password: formData.password };
+        : {
+            fullname: formData.fullname,
+            email: formData.email,
+            password: formData.password,
+          };
 
       const response = await axios.post(`${backendUrl}${endpoint}`, payload, {
         withCredentials: true,
@@ -64,7 +76,7 @@ const LoginSignUp = ({ showLogin, setShowLogin }) => {
           await fetchCurrentUser();
         }
         setShowLogin(false);
-        navigate("/");
+        navigate("/dashboard");
       }
     } catch (error) {
       const message = error.response?.data?.message || "Something went wrong";
@@ -195,6 +207,25 @@ const LoginSignUp = ({ showLogin, setShowLogin }) => {
                   {showPassword ? <FaEyeSlash /> : <FaEye />}
                 </button>
               </div>
+
+              {isLogin && (
+                <div className="flex flex-row justify-between">
+                  <div className="flex flex-row gap-2">
+                    <input
+                      type="checkbox"
+                      checked={rememberMe}
+                      onChange={(e) => setRememberMe(e.target.checked)}
+                    />
+
+                    <label htmlFor="checkbox">Remember me</label>
+                  </div>
+                  <div className="flex flex-col ">
+                    <Link className="border-b-2 border-red-300 cursor-pointer hover:text-red-300">
+                      Forgot Password ?
+                    </Link>
+                  </div>
+                </div>
+              )}
 
               {!isLogin && (
                 <div className="relative">
