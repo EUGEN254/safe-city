@@ -163,7 +163,7 @@ const UserNavbar = ({ onMenuToggle }) => {
 
             {/* Profile Dropdown */}
             {showProfileMenu && (
-              <div className="absolute right-0 top-12 w-56 bg-safecity-surface rounded-lg shadow-2xl border border-gray-700 z-50">
+              <div className="absolute right-0 top-12 w-56 bg-safecity-surface rounded-lg shadow-2xl border border-gray-700 nav-popover">
                 <div className="p-4 border-b border-gray-600">
                   <div className="font-semibold text-safecity-text truncate">
                     {user?.fullname || 'User'}
