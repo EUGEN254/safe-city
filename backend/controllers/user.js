@@ -3,6 +3,7 @@ import User from "../models/user.js";
 import generateToken from "../utils/generateToken.js";
 import { ACCOUNT_CREATION_TEMPLATE } from "./emailTemplates.js";
 import transporter from "../controllers/nodemailer.js";
+import {v2 as cloudinary} from 'cloudinary'
 
 // register user
 const registerUser = async (req, res) => {
@@ -174,5 +175,7 @@ const logout = async (req, res) => {
     });
   }
 };
+
+
 
 export { registerUser, loginUser, getUser, logout };

@@ -58,6 +58,9 @@ export const SafeCityContextProvider = (props) => {
     }
   };
 
+
+  const addReport =() => {}
+
   useEffect(() => {
     fetchCurrentUser();
   }, []);
@@ -69,6 +72,7 @@ export const SafeCityContextProvider = (props) => {
     loading,
     setUser,
     unreadCount,
+    addReport,
     fetchCurrentUser,
   };
 
