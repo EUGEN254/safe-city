@@ -1,4 +1,4 @@
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import axios from "axios";
 import {useNavigate} from 'react-router-dom'
@@ -7,6 +7,7 @@ export const SafeCityContext = createContext(null);
 
 export const SafeCityContextProvider = (props) => {
   const backendUrl = import.meta.env.VITE_BACKEND_URL;
+  const[unreadCount,setUnreadCount] = useState(4)
   const [user, setUser] = useState(null);
   const navigate = useNavigate();
 
@@ -49,11 +50,16 @@ export const SafeCityContextProvider = (props) => {
     }
   };
 
+  useEffect(() => {
+    fetchCurrentUser();
+  }, []);
+
   const value = {
     backendUrl,
     logout,
     user,
     setUser,
+    unreadCount,
     fetchCurrentUser,
   };
 

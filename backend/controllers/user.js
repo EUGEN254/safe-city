@@ -2,9 +2,7 @@ import bcrypt from "bcrypt";
 import User from "../models/user.js";
 import generateToken from "../utils/generateToken.js";
 import { ACCOUNT_CREATION_TEMPLATE } from "./emailTemplates.js";
-import transporter from "../controllers/nodemailer.js"
-
-
+import transporter from "../controllers/nodemailer.js";
 
 // register user
 const registerUser = async (req, res) => {
@@ -107,11 +105,14 @@ const loginUser = async (req, res) => {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax",
-      path: "/", 
+      path: "/",
     };
 
+    // Set appropriate maxAge based on rememberMe
     if (rememberMe) {
-      cookieOptions.maxAge = 24 * 60 * 60 * 1000; //1day
+      cookieOptions.maxAge = 30 * 24 * 60 * 60 * 1000; // 30 days for "remember me"
+    } else {
+      cookieOptions.maxAge = 24 * 60 * 60 * 1000; // 1 day for normal session
     }
 
     res.cookie("token", token, cookieOptions);
@@ -151,27 +152,27 @@ const getUser = async (req, res) => {
       email: user.email,
     };
 
-    res.json({ success: false, user: safeUser });
+    res.json({ success: true, user: safeUser });
   } catch (error) {
     console.error("Error in getUser", error);
     res.status(500).json({ success: false, message: "Server error" });
   }
 };
 
-const logout = async(req,res)=>{
+const logout = async (req, res) => {
   try {
-    res.clearCookie('token');
+    res.clearCookie("token");
     res.status(201).json({
-      success:true,
-      message:"Logged Out Successfully"
-    })
+      success: true,
+      message: "Logged Out Successfully",
+    });
   } catch (error) {
-    console.error("LoggOut error",error)
+    console.error("LoggOut error", error);
     res.status(500).json({
-      success:false,
-      message:error.message
-    })
+      success: false,
+      message: error.message,
+    });
   }
-}
+};
 
-export { registerUser, loginUser, getUser,logout };
+export { registerUser, loginUser, getUser, logout };

@@ -21,7 +21,7 @@ const userAuth = async (req, res, next) => {
     }
 
     // fetch user from db and attach to req.user
-    const user = await User.findById(decoded.id).select("-password");
+    const user = await User.findById(decode.id).select("-password");
     if (!user) {
       return res.status(401).json({
         success: false,
@@ -34,7 +34,7 @@ const userAuth = async (req, res, next) => {
   } catch (error) {
     return res.status(401).json({
       success: false,
-      message: err.message || "Not Authorised",
+      message: error.message || "Not Authorised",
     });
   }
 };
