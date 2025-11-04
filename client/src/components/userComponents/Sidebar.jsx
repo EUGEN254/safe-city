@@ -12,6 +12,7 @@ import {
   FaMapMarkerAlt,
   FaAddressBook,
   FaQuestionCircle,
+  FaTimes,
 } from "react-icons/fa";
 import { useSafeCity } from "../../context/SafeCity";
 import { NavLink } from "react-router-dom";
@@ -56,21 +57,32 @@ const Sidebar = ({ onLinkClick }) => {
       await logout();
       onLinkClick?.();
     } catch (err) {
-      toast.error(err)
+      toast.error(err);
     }
   };
 
   return (
     <aside className="w-64 h-full shadow-md rounded-2xl m-0 md:m-2 flex flex-col p-4 bg-safecity-surface">
       {/* logo + title */}
-      <div className="flex items-center gap-3 mb-8">
-        <div className="flex items-center justify-center w-10 h-10 rounded-md bg-safecity-accent flex-shrink-0">
-          <FaShieldAlt className="text-white w-5 h-5" />
+      <div className="flex items-center justify-between mb-8">
+        {/* Logo + Title */}
+        <div className="flex items-center gap-3">
+          <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-safecity-accent">
+            <FaShieldAlt className="text-white w-5 h-5" />
+          </div>
+
+          <h1 className="text-lg font-bold text-safecity-text">
+            Safe <span className="text-safecity-accent">City</span>
+          </h1>
         </div>
 
-        <h1 className="text-lg font-bold text-safecity-text">
-          Safe <span className="text-safecity-accent">City</span>
-        </h1>
+        {/* Close Button for Mobile */}
+        <button
+          onClick={onLinkClick}
+          className="md:hidden p-2 rounded-lg hover:bg-safecity-accent/20 transition duration-200"
+        >
+          <FaTimes className="w-5 h-5 text-safecity-text hover:text-safecity-accent" />
+        </button>
       </div>
 
       {/* menu section */}
@@ -89,7 +101,11 @@ const Sidebar = ({ onLinkClick }) => {
                 end={link.path === "dashboard"}
                 className={({ isActive }) =>
                   `flex items-center gap-3 px-3 py-2 rounded-md transition-colors cursor-pointer
-                  ${isActive ? "bg-safecity-accent text-white font-semibold" : "text-safecity-text hover:text-white hover:bg-safecity-accent/60"}`
+                  ${
+                    isActive
+                      ? "bg-safecity-accent text-white font-semibold"
+                      : "text-safecity-text hover:text-white hover:bg-safecity-accent/60"
+                  }`
                 }
               >
                 <span className="w-5 h-5 flex items-center justify-center">
@@ -136,7 +152,11 @@ const Sidebar = ({ onLinkClick }) => {
                   onClick={onLinkClick}
                   className={({ isActive }) =>
                     `flex items-center gap-3 px-3 py-2 rounded-md transition-colors cursor-pointer
-                    ${isActive ? "bg-safecity-accent text-gray-900 font-semibold" : "text-safecity-text hover:bg-safecity-accent hover:text-gray-900"}`
+                    ${
+                      isActive
+                        ? "bg-safecity-accent text-gray-900 font-semibold"
+                        : "text-safecity-text hover:bg-safecity-accent hover:text-gray-900"
+                    }`
                   }
                 >
                   <span className="w-5 h-5 flex items-center justify-center">

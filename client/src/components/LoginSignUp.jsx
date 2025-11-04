@@ -16,10 +16,10 @@ import { useSafeCity } from "../context/SafeCity";
 
 const LoginSignUp = ({ showLogin, setShowLogin }) => {
   const navigate = useNavigate();
-  const { backendUrl, fetchCurrentUser, setUser } = useSafeCity();
+  const { backendUrl, fetchCurrentUser, setUser } = useSafeCity(); 
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false); 
   const [rememberMe, setRememberMe] = useState(false);
   const [formData, setFormData] = useState({
     fullname: "",
@@ -53,7 +53,7 @@ const LoginSignUp = ({ showLogin, setShowLogin }) => {
       return;
     }
 
-    setIsLoading(true);
+    setIsSubmitting(true);
     try {
       const endpoint = isLogin ? "/api/user/login" : "/api/user/register";
       const payload = isLogin
@@ -73,7 +73,7 @@ const LoginSignUp = ({ showLogin, setShowLogin }) => {
         if (response.data.user) {
           setUser(response.data.user);
         } else {
-          await fetchCurrentUser();
+          await fetchCurrentUser(); 
         }
         setShowLogin(false);
         navigate("/dashboard");
@@ -82,7 +82,7 @@ const LoginSignUp = ({ showLogin, setShowLogin }) => {
       const message = error.response?.data?.message || "Something went wrong";
       toast.error(message);
     } finally {
-      setIsLoading(false);
+      setIsSubmitting(false);
     }
   };
 
@@ -111,8 +111,8 @@ const LoginSignUp = ({ showLogin, setShowLogin }) => {
           >
             {/* Close */}
             <button
-              onClick={() => !isLoading && setShowLogin(false)}
-              disabled={isLoading}
+              onClick={() => !isSubmitting && setShowLogin(false)}
+              disabled={isSubmitting}
               className="absolute -top-2 -right-2 bg-safecity-dark rounded-full p-2 shadow-md text-safecity-muted hover:text-safecity-accent hover:bg-safecity-surface transition"
             >
               <FaTimes className="text-lg" />
@@ -134,7 +134,9 @@ const LoginSignUp = ({ showLogin, setShowLogin }) => {
             {/* Toggle Buttons */}
             <div className="flex bg-safecity-dark rounded-xl p-1 mb-6">
               <button
-                onClick={() => !isLoading && setIsLogin(true)}
+                type="button"
+                onClick={() => !isSubmitting && setIsLogin(true)}
+                disabled={isSubmitting}
                 className={`flex-1 py-2 rounded-lg font-medium text-sm transition-all ${
                   isLogin
                     ? "bg-safecity-surface text-safecity-accent shadow-md"
@@ -144,7 +146,9 @@ const LoginSignUp = ({ showLogin, setShowLogin }) => {
                 Login
               </button>
               <button
-                onClick={() => !isLoading && setIsLogin(false)}
+                type="button"
+                onClick={() => !isSubmitting && setIsLogin(false)}
+                disabled={isSubmitting}
                 className={`flex-1 py-2 rounded-lg font-medium text-sm transition-all ${
                   !isLogin
                     ? "bg-safecity-surface text-safecity-accent shadow-md"
@@ -159,7 +163,7 @@ const LoginSignUp = ({ showLogin, setShowLogin }) => {
             <form onSubmit={handleSubmit} className="space-y-4">
               {!isLogin && (
                 <div className="relative">
-                  <FaUser className="absolute left-3 top-1/2 -translate-y-1/2 text-safecity-muted" />
+                  <FaUser className="absolute left-3 top-1/2 -translate-y-1/2 text-safecity-muted text-sm" />
                   <input
                     type="text"
                     name="fullname"
@@ -167,14 +171,14 @@ const LoginSignUp = ({ showLogin, setShowLogin }) => {
                     onChange={handleChange}
                     placeholder="Full Name"
                     required
-                    disabled={isLoading}
-                    className="w-full pl-10 pr-3 py-3 bg-safecity-dark rounded-xl focus:ring-2 focus:ring-safecity-accent text-sm"
+                    disabled={isSubmitting}
+                    className="w-full pl-10 pr-3 py-3 bg-safecity-dark rounded-xl focus:ring-2 focus:ring-safecity-accent text-sm placeholder-safecity-muted"
                   />
                 </div>
               )}
 
               <div className="relative">
-                <FaEnvelope className="absolute left-3 top-1/2 -translate-y-1/2 text-safecity-muted" />
+                <FaEnvelope className="absolute left-3 top-1/2 -translate-y-1/2 text-safecity-muted text-sm" />
                 <input
                   type="email"
                   name="email"
@@ -182,13 +186,13 @@ const LoginSignUp = ({ showLogin, setShowLogin }) => {
                   onChange={handleChange}
                   placeholder="Email Address"
                   required
-                  disabled={isLoading}
-                  className="w-full pl-10 pr-3 py-3 bg-safecity-dark rounded-xl focus:ring-2 focus:ring-safecity-accent text-sm"
+                  disabled={isSubmitting}
+                  className="w-full pl-10 pr-3 py-3 bg-safecity-dark rounded-xl focus:ring-2 focus:ring-safecity-accent text-sm placeholder-safecity-muted"
                 />
               </div>
 
               <div className="relative">
-                <FaLock className="absolute left-3 top-1/2 -translate-y-1/2 text-safecity-muted" />
+                <FaLock className="absolute left-3 top-1/2 -translate-y-1/2 text-safecity-muted text-sm" />
                 <input
                   type={showPassword ? "text" : "password"}
                   name="password"
@@ -196,32 +200,37 @@ const LoginSignUp = ({ showLogin, setShowLogin }) => {
                   onChange={handleChange}
                   placeholder="Password"
                   required
-                  disabled={isLoading}
-                  className="w-full pl-10 pr-10 py-3 bg-safecity-dark rounded-xl focus:ring-2 focus:ring-safecity-accent text-sm"
+                  disabled={isSubmitting}
+                  className="w-full pl-10 pr-10 py-3 bg-safecity-dark rounded-xl focus:ring-2 focus:ring-safecity-accent text-sm placeholder-safecity-muted"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-safecity-muted hover:text-safecity-accent"
+                  disabled={isSubmitting}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-safecity-muted hover:text-safecity-accent text-sm"
                 >
                   {showPassword ? <FaEyeSlash /> : <FaEye />}
                 </button>
               </div>
 
               {isLogin && (
-                <div className="flex flex-row justify-between">
-                  <div className="flex flex-row gap-2">
+                <div className="flex flex-row justify-between items-center text-sm">
+                  <div className="flex flex-row gap-2 items-center">
                     <input
                       type="checkbox"
+                      id="rememberMe"
                       checked={rememberMe}
                       onChange={(e) => setRememberMe(e.target.checked)}
+                      className="w-4 h-4"
+                      disabled={isSubmitting}
                     />
-
-                    <label htmlFor="checkbox">Remember me</label>
+                    <label htmlFor="rememberMe" className="text-safecity-muted">
+                      Remember me
+                    </label>
                   </div>
-                  <div className="flex flex-col ">
-                    <Link className="border-b-2 border-red-300 cursor-pointer hover:text-red-300">
-                      Forgot Password ?
+                  <div>
+                    <Link className="text-safecity-accent hover:text-safecity-accent-hover cursor-pointer text-sm">
+                      Forgot Password?
                     </Link>
                   </div>
                 </div>
@@ -229,7 +238,7 @@ const LoginSignUp = ({ showLogin, setShowLogin }) => {
 
               {!isLogin && (
                 <div className="relative">
-                  <FaLock className="absolute left-3 top-1/2 -translate-y-1/2 text-safecity-muted" />
+                  <FaLock className="absolute left-3 top-1/2 -translate-y-1/2 text-safecity-muted text-sm" />
                   <input
                     type={showPassword ? "text" : "password"}
                     name="confirmPassword"
@@ -237,18 +246,18 @@ const LoginSignUp = ({ showLogin, setShowLogin }) => {
                     onChange={handleChange}
                     placeholder="Confirm Password"
                     required
-                    disabled={isLoading}
-                    className="w-full pl-10 pr-3 py-3 bg-safecity-dark rounded-xl focus:ring-2 focus:ring-safecity-accent text-sm"
+                    disabled={isSubmitting}
+                    className="w-full pl-10 pr-3 py-3 bg-safecity-dark rounded-xl focus:ring-2 focus:ring-safecity-accent text-sm placeholder-safecity-muted"
                   />
                 </div>
               )}
 
               <button
                 type="submit"
-                disabled={isLoading}
-                className="w-full bg-safecity-accent hover:bg-safecity-accent-hover text-white py-3 rounded-xl font-semibold shadow-md transition"
+                disabled={isSubmitting}
+                className="w-full bg-safecity-accent hover:bg-safecity-accent-hover text-white py-3 rounded-xl font-semibold shadow-md transition disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {isLoading
+                {isSubmitting
                   ? isLogin
                     ? "Signing In..."
                     : "Creating Account..."

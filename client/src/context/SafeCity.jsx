@@ -7,25 +7,33 @@ export const SafeCityContext = createContext(null);
 
 export const SafeCityContextProvider = (props) => {
   const backendUrl = import.meta.env.VITE_BACKEND_URL;
-  const[unreadCount,setUnreadCount] = useState(4)
+  const[unreadCount,setUnreadCount] = useState(4);
+  const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
   const navigate = useNavigate();
 
   // fetching user
   const fetchCurrentUser = async () => {
+    setLoading(true); 
     try {
       const response = await axios.get(`${backendUrl}/api/user/getme`, {
         withCredentials: true,
       });
-
+  
       if (response.data.success && response.data.user) {
         setUser(response.data.user);
       } else {
         setUser(null);
       }
     } catch (error) {
-      toast.error("Failed to fetch user");
-      console.error(error);
+      // Handle 401 silently (user not logged in - normal case)
+      if (error.response?.status === 401) {
+        setUser(null);
+      } else {
+        console.error('Error fetching user:', error);
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -41,8 +49,8 @@ export const SafeCityContextProvider = (props) => {
       );
       if (response.data.success) {
         setUser(null);
-        toast.success(response.data.message);
         navigate("/"); 
+        toast.success(response.data.message);
       }
     } catch (error) {
       toast.error("Failed to logout");
@@ -58,6 +66,7 @@ export const SafeCityContextProvider = (props) => {
     backendUrl,
     logout,
     user,
+    loading,
     setUser,
     unreadCount,
     fetchCurrentUser,

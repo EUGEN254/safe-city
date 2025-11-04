@@ -1,20 +1,24 @@
 import React, { useState } from "react";
 import { useSafeCity } from "../context/SafeCity";
-import { Outlet, useNavigate } from "react-router-dom";
+import { Outlet, Navigate } from "react-router-dom";
 import UserNavbar from "../components/userComponents/UserNavbar";
 import Sidebar from "../components/userComponents/Sidebar";
 
 const Layout = () => {
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
-  const { user } = useSafeCity();
-  const navigate = useNavigate()
+  const { user, loading } = useSafeCity();
 
   const handleLinkClick = () => {
     setIsMobileSidebarOpen(false);
   };
 
+  // Show nothing while loading - the HTML spinner handles initial loading
+  if (loading) {
+    return null;
+  }
+
   // Redirect if user not logged in
-  if (!user) return <navigate to="/" replace />;
+  if (!user) return <Navigate to="/" replace />;
 
   return (
     <div className="flex h-screen overflow-hidden">
@@ -30,7 +34,7 @@ const Layout = () => {
             className="absolute inset-0 bg-black bg-opacity-50"
             onClick={() => setIsMobileSidebarOpen(false)}
           />
-          <div className="relative z-50 w-64 h-full">
+          <div className="relative z-50 w-64 mt-2 h-full">
             <Sidebar onLinkClick={handleLinkClick} />
           </div>
         </div>
