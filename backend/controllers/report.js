@@ -1,4 +1,5 @@
 import Report from "../models/report.js";
+import User from "../models/user.js";
 import { v2 as cloudinary } from "cloudinary";
 
 const addReport = async (req, res) => {
@@ -51,4 +52,25 @@ const addReport = async (req, res) => {
   }
 };
 
-export { addReport };
+const getReports = async (req,res) => {
+  try {
+    const reports = await Report.find()
+     .sort({createdAt: -1})//newest first
+     .populate("reporter", "fullname email")//get reporter info
+
+    return res.status(200).json({
+      success:true,
+      message:reports,
+    })
+  } catch (error) {
+    console.error("Reports erros",error)
+    return res.status(500).json({
+      success:false,
+      message:"Server error"
+    })
+    
+  }
+  
+}
+
+export { addReport,getReports };

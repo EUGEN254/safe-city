@@ -8,16 +8,15 @@ import { useSafeCity } from "../../context/SafeCity";
 import { toast } from "react-toastify";
 
 // import leaflet marker images
-import markerIcons2x from 'leaflet/dist/images/marker-icon-2x.png'
-import markerIcon from 'leaflet/dist/images/marker-icon.png'
-import markerShadow from 'leaflet/dist/images/marker-shadow.png'
-
+import markerIcons2x from "leaflet/dist/images/marker-icon-2x.png";
+import markerIcon from "leaflet/dist/images/marker-icon.png";
+import markerShadow from "leaflet/dist/images/marker-shadow.png";
 
 // Fix for default markers in Leaflet with Webpack
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: markerIcons2x,
-  iconUrl:  markerIcon,
+  iconUrl: markerIcon,
   shadowUrl: markerShadow,
 });
 
@@ -119,7 +118,6 @@ const Report = () => {
       mapRef.current.on("locationerror", handleLocationError);
 
       setMapInitialized(true);
-      
     } catch (error) {
       console.error("Error initializing map:", error);
       toast.error("Failed to initialize map");
@@ -151,14 +149,14 @@ const Report = () => {
       const timeoutId = setTimeout(() => {
         try {
           mapRef.current.invalidateSize();
-          
+
           // Try to locate user after map is properly sized
           setTimeout(() => {
             if (mapRef.current) {
-              mapRef.current.locate({ 
-                setView: true, 
+              mapRef.current.locate({
+                setView: true,
                 maxZoom: 16,
-                timeout: 10000 // 10 second timeout
+                timeout: 10000, // 10 second timeout
               });
             }
           }, 500);
@@ -214,10 +212,10 @@ const Report = () => {
     }
 
     try {
-      mapRef.current.locate({ 
-        setView: true, 
+      mapRef.current.locate({
+        setView: true,
         maxZoom: 16,
-        timeout: 10000 
+        timeout: 10000,
       });
       toast.info("Locating your position...");
     } catch (error) {
@@ -280,7 +278,7 @@ const Report = () => {
   const handleDrop = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    
+
     try {
       const droppedFiles = Array.from(e.dataTransfer.files || []).filter((f) =>
         f.type.startsWith("image/")
@@ -294,7 +292,7 @@ const Report = () => {
       }
 
       const previews = combined.map((f) => URL.createObjectURL(f));
-      
+
       // Revoke old previews
       form.imagePreviews.forEach((url) => {
         try {
@@ -303,8 +301,12 @@ const Report = () => {
           console.error("Error revoking object URL:", error);
         }
       });
-      
-      setForm((prev) => ({ ...prev, images: combined, imagePreviews: previews }));
+
+      setForm((prev) => ({
+        ...prev,
+        images: combined,
+        imagePreviews: previews,
+      }));
     } catch (error) {
       console.error("Error handling drop:", error);
       toast.error("Error processing dropped files");
@@ -380,14 +382,14 @@ const Report = () => {
       fd.append("anonymous", String(form.anonymous));
       fd.append("latitude", String(chosenLocation.lat));
       fd.append("longitude", String(chosenLocation.lng));
-      
+
       // append images
       form.images.forEach((file) => {
         fd.append("images", file);
       });
 
       const response = await axios.post(
-        `${backendUrl}/api/user/add-report`,
+        `${backendUrl}/api/reports/add-report`,
         fd,
         {
           withCredentials: true,
@@ -406,7 +408,7 @@ const Report = () => {
       }
 
       toast.success(response.data.message || "Report submitted successfully!");
-      
+
       // reset form
       form.imagePreviews.forEach((url) => {
         try {
@@ -415,7 +417,7 @@ const Report = () => {
           console.error("Error revoking object URL during reset:", error);
         }
       });
-      
+
       setForm({
         category: "",
         urgency: "",
@@ -426,7 +428,7 @@ const Report = () => {
         anonymous: false,
       });
       setChosenLocation(null);
-      
+
       // reset marker
       if (markerRef.current) {
         try {
@@ -436,12 +438,12 @@ const Report = () => {
           console.error("Error removing marker:", error);
         }
       }
-      
     } catch (err) {
       console.error("Submission error:", err);
-      const errorMessage = err?.response?.data?.message || 
-                          err?.message || 
-                          "Submission failed. Please try again.";
+      const errorMessage =
+        err?.response?.data?.message ||
+        err?.message ||
+        "Submission failed. Please try again.";
       toast.error(errorMessage);
     } finally {
       setIsLoading(false);
@@ -463,10 +465,10 @@ const Report = () => {
               <span className="text-yellow-500 ml-2">(Loading map...)</span>
             )}
           </div>
-          <div 
-            id="live-map" 
+          <div
+            id="live-map"
             ref={mapContainerRef}
-            style={{ height: 320, width: "100%" }} 
+            style={{ height: 320, width: "100%" }}
           />
           <div className="p-3 flex items-center justify-between">
             <div className="text-sm text-safecity-muted">
@@ -606,7 +608,8 @@ const Report = () => {
                 ))
               ) : (
                 <div className="col-span-3 text-safecity-muted text-center py-4">
-                  No images selected. You can click the upload area or drag images here.
+                  No images selected. You can click the upload area or drag
+                  images here.
                 </div>
               )}
             </div>
@@ -625,15 +628,17 @@ const Report = () => {
               <label
                 htmlFor="report-images"
                 className={`w-full cursor-pointer rounded px-3 py-2 text-center border transition ${
-                  form.images.length >= MAX_IMAGES 
-                    ? 'bg-gray-600 cursor-not-allowed' 
-                    : 'bg-safecity-dark hover:bg-safecity-accent-hover'
+                  form.images.length >= MAX_IMAGES
+                    ? "bg-gray-600 cursor-not-allowed"
+                    : "bg-safecity-dark hover:bg-safecity-accent-hover"
                 }`}
               >
                 <div className="flex flex-col items-center gap-2">
                   <FaUpload />
                   <span className="text-sm text-safecity-text">
-                    {form.images.length >= MAX_IMAGES ? 'Max reached' : 'Click to upload'}
+                    {form.images.length >= MAX_IMAGES
+                      ? "Max reached"
+                      : "Click to upload"}
                   </span>
                   <span className="text-xs text-safecity-muted">
                     PNG, JPG, JPEG up to 4MB

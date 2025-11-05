@@ -5,6 +5,7 @@ import cookieParser from "cookie-parser";
 import connectCloudinary from "./configs/cloudinary.js";
 import connectDB from "./configs/connectDB.js";
 import userRouter from "./routes/userRoutes.js";
+import reportRouter from "./routes/reportRoutes.js";
 
 // .......express setup.......
 const app = express();
@@ -38,6 +39,7 @@ app.get("/", (req, res) => {
 
 // Routes
 app.use("/api/user", userRouter);
+app.use("/api/reports", reportRouter);
 
 // connect MongoDb
 await connectDB();

@@ -34,7 +34,7 @@ const Layout = () => {
             className="absolute inset-0 bg-black bg-opacity-50"
             onClick={() => setIsMobileSidebarOpen(false)}
           />
-          <div className="relative z-50 w-64 mt-2 h-full">
+          <div className="relative nav-popover w-64 mt-2 h-full">
             <Sidebar onLinkClick={handleLinkClick} />
           </div>
         </div>
