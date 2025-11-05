@@ -29,9 +29,9 @@ const Layout = () => {
 
       {/* mobile sidebar */}
       {isMobileSidebarOpen && (
-        <div className="fixed inset-0 z-40 lg:hidden">
+        <div className="fixed inset-0 nav-popover lg:hidden">
           <div
-            className="absolute inset-0 bg-black bg-opacity-50"
+            className="absolute inset-0 bg-black/60 bg-opacity-50"
             onClick={() => setIsMobileSidebarOpen(false)}
           />
           <div className="relative nav-popover w-64 mt-2 h-full">

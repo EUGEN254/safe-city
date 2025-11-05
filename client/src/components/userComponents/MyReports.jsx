@@ -2,6 +2,9 @@ import React, { useEffect, useRef, useState } from "react";
 import { useSafeCity } from "../../context/SafeCity";
 import axios from "axios";
 import { toast } from "react-toastify";
+import { FaImage, FaUpload, FaTrash } from "react-icons/fa";
+
+const MAX_IMAGES = 3;
 
 const MyReports = () => {
   const [categoryFilter, setCategoryFilter] = useState("");
@@ -10,71 +13,144 @@ const MyReports = () => {
   const [selectedReport, setSelectedReport] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [deleteModal, setDeleteModal] = useState(false);
+  const [editModal, setEditModal] = useState(false);
   const [reportToDelete, setReportToDelete] = useState(null);
-  const [modalPosition, setModalPosition] = useState({ top: 0, left: 0 });
   const [reports, setReports] = useState([]);
   const { backendUrl } = useSafeCity();
   const [loading, setLoading] = useState(false);
+
   const buttonRefs = useRef([]);
 
-  // Dummy data for categories & urgency
+  const [form, setForm] = useState({
+    title: "",
+    category: "",
+    urgency: "",
+    description: "",
+    images: [],
+    newImages: [],
+    imagePreviews: [],
+    anonymous: false,
+  });
+
   const categories = [
-    { id: 1, name: "Road Hazard" },
-    { id: 2, name: "StreetLight Hazard" },
-    { id: 3, name: "Water Leakage" },
-    { id: 4, name: "Public Safety Concern" },
-    { id: 5, name: "Garbage / Cleanliness" },
+    "Road Hazard",
+    "StreetLight Hazard",
+    "Water Leakage",
+    "Public Safety Concern",
+    "Garbage / Cleanliness",
   ];
 
-  const urgencyLevels = [
-    { id: 1, label: "High", description: "Emergency situation" },
-    { id: 2, label: "Medium", description: "Needs attention soon" },
-    { id: 3, label: "Low", description: "Minor issue" },
-  ];
+  const urgencyLevels = ["High", "Medium", "Low"];
 
-  // Fetch reports from backend
   useEffect(() => {
-    const fetchReports = async () => {
+    (async () => {
       try {
         setLoading(true);
-        const response = await axios.get(
-          `${backendUrl}/api/reports/get-reports`,
-          {
-            withCredentials: true,
-          }
-        );
-        if (!response.data.success) {
-          toast.error(response.data.message);
-        } else {
-          setReports(response.data.reports || []);
+        const res = await axios.get(`${backendUrl}/api/reports/get-reports`, {
+          withCredentials: true,
+        });
+        if (res.data.success) {
+          setReports(res.data.reports);
         }
-      } catch (error) {
-        toast.error(error.message || "Error fetching reports");
+      } catch (err) {
+        toast.error("Failed to fetch reports");
       } finally {
         setLoading(false);
       }
-    };
-    fetchReports();
+    })();
   }, [backendUrl]);
 
-  // Handle View
   const handleReportView = (report, index) => {
-    if (!report) return;
-
-    const button = buttonRefs.current[index];
-    if (button) {
-      setModalPosition({
-        top: window.innerHeight / 2 - 200, // half of modal height (~200px)
-        left: window.innerWidth / 2 - 160, // half of modal width (320px)
-      });
-
-      setSelectedReport(report);
-      setModalOpen(true);
-    }
+    setSelectedReport(report);
+    setModalOpen(true);
   };
 
-  const handleEditView = (report, index) => {
-    console.log("Edit report", report, index);
+  const handleChange = (e) => {
+    const { name, type, value, checked } = e.target;
+    setForm((prev) => ({
+      ...prev,
+      [name]: type === "checkbox" ? checked : value,
+    }));
+  };
+
+  const handleImageUpload = (e) => {
+    const files = Array.from(e.target.files);
+    const newFiles = files.slice(0, MAX_IMAGES - form.images.length);
+
+    const newPreviews = newFiles.map((file) => URL.createObjectURL(file));
+
+    setForm((prev) => ({
+      ...prev,
+      newImages: [...prev.newImages, ...newFiles],
+      imagePreviews: [...prev.imagePreviews, ...newPreviews],
+    }));
+  };
+
+  const removeImageAt = (index) => {
+    setForm((prev) => {
+      const newPrev = [...prev.imagePreviews];
+      newPrev.splice(index, 1);
+
+      const newFiles = [...prev.newImages];
+      if (newFiles[index]) newFiles.splice(index, 1);
+
+      return { ...prev, newImages: newFiles, imagePreviews: newPrev };
+    });
+  };
+
+  const handleEditView = (report) => {
+    setSelectedReport(report);
+    setForm({
+      title: report.title,
+      category: report.category,
+      urgency: report.urgency,
+      description: report.description,
+      images: report.images || [],
+      newImages: [],
+      imagePreviews: report.images || [],
+      anonymous: report.anonymous,
+    });
+    setEditModal(true);
+  };
+
+  const handleEditSubmit = async (e) => {
+    e.preventDefault();
+    if (!selectedReport) return;
+
+    try {
+      setLoading(true);
+
+      const formData = new FormData();
+      formData.append("title", form.title);
+      formData.append("category", form.category);
+      formData.append("urgency", form.urgency);
+      formData.append("description", form.description);
+      formData.append("anonymous", form.anonymous);
+
+      formData.append("existingImages", JSON.stringify(form.images));
+
+      form.newImages.forEach((file) => {
+        formData.append("images", file);
+      });
+
+      const res = await axios.put(
+        `${backendUrl}/api/reports/update/${selectedReport._id}`,
+        formData,
+        { withCredentials: true }
+      );
+
+      if (res.data.success) {
+        toast.success("Report updated successfully");
+        setReports((prev) =>
+          prev.map((r) => (r._id === res.data.report._id ? res.data.report : r))
+        );
+        setEditModal(false);
+      }
+    } catch (err) {
+      toast.error("Failed to update report");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleDelete = async () => {
@@ -82,33 +158,26 @@ const MyReports = () => {
 
     try {
       setLoading(true);
-
-      const response = await axios.delete(
+      await axios.delete(
         `${backendUrl}/api/reports/delete/${reportToDelete._id}`,
         { withCredentials: true }
       );
 
-      if (!response.data.success) {
-        throw new Error(response.data.message);
-      }
-
-      toast.success(response.data.message);
-
       setReports((prev) => prev.filter((r) => r._id !== reportToDelete._id));
-    } catch (error) {
-      toast.error(error.response?.data?.message || error.message);
+      toast.success("Report deleted!");
+      setDeleteModal(false);
+    } catch {
+      toast.error("Delete failed");
     } finally {
       setLoading(false);
-      setDeleteModal(false);
     }
   };
 
-  // Filter reports
   const filteredReports = reports.filter(
     (r) =>
-      (categoryFilter === "" || r.category === categoryFilter) &&
-      (urgencyFilter === "" || r.urgency === urgencyFilter) &&
-      (searchFilter === "" ||
+      (!categoryFilter || r.category === categoryFilter) &&
+      (!urgencyFilter || r.urgency === urgencyFilter) &&
+      (!searchFilter ||
         r.description.toLowerCase().includes(searchFilter.toLowerCase()))
   );
 
@@ -242,7 +311,7 @@ const MyReports = () => {
                       </button>
                       <button
                         ref={(el) => (buttonRefs.current[index] = el)}
-                        onClick={() => handleEditView(report, index)}
+                        onClick={() => handleEditView(report)}
                         className="py-1 px-3 rounded-lg bg-yellow-500 text-white hover:bg-yellow-600"
                       >
                         Edit
@@ -274,107 +343,179 @@ const MyReports = () => {
         </div>
       </div>
 
-      {/* Report Modal */}
+      {/*  View Modal */}
       {modalOpen && selectedReport && (
-        <div
-          className="fixed z-50 bg-safecity-dark rounded-lg shadow-2xl border border-gray-300 w-80 max-w-sm p-4 animate-fade-in"
-          style={{
-            top: `${modalPosition.top}px`,
-            left: `${modalPosition.left}px`,
-            transform: "translate(0, 0)",
-          }}
-        >
-          {/* Close button */}
-          <button
-            onClick={() => setModalOpen(false)}
-            className="absolute top-2 right-2 text-gray-400 hover:text-gray-600 text-lg"
-          >
-            ✕
-          </button>
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+          <div className="bg-safecity-dark w-96 p-5 rounded-lg border border-gray-500 relative">
+            <button
+              onClick={() => setModalOpen(false)}
+              className="absolute top-2 right-2 text-white text-lg"
+            >
+              ✕
+            </button>
 
-          {/* Title */}
-          <h2 className="text-lg font-bold text-red-800 mb-3 border-b pb-2">
-            Report Details
-          </h2>
+            <h2 className="text-lg text-red-500 font-bold mb-3">
+              Report Details
+            </h2>
 
-          <div className="space-y-4 text-white/50 text-sm">
-            <div>
-              <span className="font-semibold">Title:</span>{" "}
-              {selectedReport.title}
-            </div>
-            <div>
-              <span className="font-semibold">Category:</span>{" "}
-              {selectedReport.category}
-            </div>
-            <div>
-              <span className="font-semibold">Urgency:</span>{" "}
-              {selectedReport.urgency}
-            </div>
-            <div>
-              <span className="font-semibold">Description:</span>{" "}
-              {selectedReport.description}
-            </div>
-            <div>
-              <span className="font-semibold">Images:</span>
-              <div className="flex flex-wrap gap-2 mt-1">
-                {selectedReport.images && selectedReport.images.length > 0 ? (
-                  selectedReport.images.map((img, i) => (
+            <p className="text-safecity-text">
+              <b>Title:</b> {selectedReport.title}
+            </p>
+            <p className="text-safecity-text">
+              <b>Category:</b> {selectedReport.category}
+            </p>
+            <p className="text-safecity-text">
+              <b>Urgency:</b> {selectedReport.urgency}
+            </p>
+            <p className="text-safecity-text">
+              <b>Description:</b> {selectedReport.description}
+            </p>
+
+            {/* ✅ Display Images */}
+            {selectedReport.images?.length > 0 && (
+              <div className="mt-3">
+                <p className="text-safecity-text font-semibold mb-1">Images:</p>
+                <div className="flex gap-2 flex-wrap">
+                  {selectedReport.images.map((img, i) => (
                     <img
                       key={i}
                       src={img}
                       alt="report"
-                      className="w-20 h-20 object-cover rounded-md"
+                      className="w-28 h-28 rounded object-cover border border-gray-600"
                     />
-                  ))
-                ) : (
-                  <span className="text-safecity-muted">No images</span>
-                )}
+                  ))}
+                </div>
               </div>
-            </div>
-          </div>
-
-          {/* Close button at bottom */}
-          <div className="flex justify-end mt-3 pt-2 border-t">
-            <button
-              onClick={() => setModalOpen(false)}
-              className="px-3 py-1 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors text-sm"
-            >
-              Close
-            </button>
+            )}
           </div>
         </div>
       )}
 
-      {/* delete modal */}
+      {/* Delete Modal */}
       {deleteModal && (
         <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50">
-          <div className="bg-safecity-dark rounded-lg p-6 w-80 text-center space-y-4 border border-gray-500">
-            <h2 className="text-lg font-bold text-red-600">Confirm Delete</h2>
+          <div className="bg-safecity-dark p-6 rounded-lg text-center space-y-4 w-80">
+            <h2 className="text-lg font-bold text-red-500">Confirm Delete</h2>
             <p className="text-safecity-muted text-sm">
-              Are you sure you want to delete this report?
+              Delete this report permanently?
             </p>
 
-            <div className="flex justify-between mt-4">
+            <div className="flex justify-between">
               <button
                 onClick={() => setDeleteModal(false)}
-                className="px-4 py-1 bg-gray-500 text-white rounded hover:bg-gray-600"
+                className="px-4 py-1 bg-gray-600 text-white rounded"
               >
                 Cancel
               </button>
 
               <button
                 onClick={handleDelete}
-                disabled={loading}
-                className={`px-4 py-1 text-white rounded transition-colors
-                  ${
-                    loading
-                      ? "bg-red-600 cursor-not-allowed"
-                      : "bg-red-700 hover:bg-red-700"
-                  }`}
+                className="px-4 py-1 bg-red-700 hover:bg-red-800 text-white rounded"
               >
                 {loading ? "Deleting..." : "Delete"}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/*  Edit Modal */}
+      {editModal && (
+        <div className="fixed inset-0 bg-black/60 flex justify-center items-center z-50 overflow-y-auto p-4">
+          <div className="bg-safecity-dark rounded-lg p-5 w-[95%] max-w-2xl">
+            <h2 className="text-lg font-bold text-white mb-3">Edit Report</h2>
+
+            <form onSubmit={handleEditSubmit} className="space-y-4">
+              <input
+                name="title"
+                value={form.title}
+                onChange={handleChange}
+                className="w-full p-2 bg-safecity-surface rounded"
+                required
+              />
+
+              <select
+                name="category"
+                value={form.category}
+                onChange={handleChange}
+                className="w-full p-2 bg-safecity-surface rounded"
+              >
+                <option value="">Select Category</option>
+                {categories.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </select>
+
+              <select
+                name="urgency"
+                value={form.urgency}
+                onChange={handleChange}
+                className="w-full p-2 bg-safecity-surface rounded"
+              >
+                <option value="">Select urgency</option>
+                {urgencyLevels.map((u) => (
+                  <option key={u} value={u}>
+                    {u}
+                  </option>
+                ))}
+              </select>
+
+              <textarea
+                name="description"
+                rows={4}
+                value={form.description}
+                onChange={handleChange}
+                className="w-full p-2 bg-safecity-surface rounded"
+              />
+
+              {/*  Image Upload section fully working now */}
+              <div>
+                <label className="text-white">
+                  Images ({form.imagePreviews.length}/{MAX_IMAGES})
+                </label>
+                <input
+                  type="file"
+                  multiple
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                />
+                <div className="flex gap-2 mt-2">
+                  {form.imagePreviews.map((src, i) => (
+                    <div key={i} className="relative">
+                      <img
+                        src={src}
+                        className="w-20 h-20 rounded object-cover"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeImageAt(i)}
+                        className="absolute top-1 right-1 bg-black text-white rounded p-1"
+                      >
+                        <FaTrash size={12} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <label className="flex gap-2 items-center text-white">
+                <input
+                  type="checkbox"
+                  name="anonymous"
+                  checked={form.anonymous}
+                  onChange={handleChange}
+                />
+                Anonymous Report
+              </label>
+
+              <div className="text-right">
+                <button className="px-5 py-2 bg-safecity-accent text-white rounded">
+                  {loading ? "Saving..." : "Save Changes"}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
