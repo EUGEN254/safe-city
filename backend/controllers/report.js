@@ -134,7 +134,7 @@ const updateReport = async (req, res) => {
       finalImages = [...parsed];
     }
 
-    // ✅ Upload newly added images
+    // Upload newly added images
     if (req.files && req.files.length > 0) {
       for (const file of req.files) {
         const uploaded = await cloudinary.uploader.upload(file.path, {
@@ -145,7 +145,7 @@ const updateReport = async (req, res) => {
       }
     }
 
-    // ✅ Remove Cloudinary images that user deleted
+    // Remove Cloudinary images that user deleted
     for (const oldImg of report.images) {
       if (!finalImages.includes(oldImg)) {
         const publicId = getPublicId(oldImg);
@@ -153,7 +153,7 @@ const updateReport = async (req, res) => {
       }
     }
 
-    // ✅ Limit max 3 images
+    // Limit max 3 images
     report.images = finalImages.slice(0, 3);
 
     const updatedReport = await report.save();
