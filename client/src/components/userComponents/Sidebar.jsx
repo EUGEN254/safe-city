@@ -50,6 +50,7 @@ const navlinks = (logout) => ({
 
 const Sidebar = ({ onLinkClick }) => {
   const { logout, unreadCount = 0 } = useSafeCity();
+  
   const links = navlinks(logout);
 
   const handleLogout = async () => {
@@ -98,7 +99,7 @@ const Sidebar = ({ onLinkClick }) => {
               <NavLink
                 to={link.path}
                 onClick={onLinkClick}
-                end={link.path === "dashboard"}
+                end={link.path === "/dashboard"}
                 className={({ isActive }) =>
                   `flex items-center gap-3 px-3 py-2 rounded-md transition-colors cursor-pointer
                   ${

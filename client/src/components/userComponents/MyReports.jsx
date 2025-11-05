@@ -9,6 +9,8 @@ const MyReports = () => {
   const [searchFilter, setSearchFilter] = useState("");
   const [selectedReport, setSelectedReport] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [deleteModal, setDeleteModal] = useState(false);
+  const [reportToDelete, setReportToDelete] = useState(null);
   const [modalPosition, setModalPosition] = useState({ top: 0, left: 0 });
   const [reports, setReports] = useState([]);
   const { backendUrl } = useSafeCity();
@@ -44,7 +46,7 @@ const MyReports = () => {
         if (!response.data.success) {
           toast.error(response.data.message);
         } else {
-          setReports(response.data.message);
+          setReports(response.data.reports || []);
         }
       } catch (error) {
         toast.error(error.message || "Error fetching reports");
@@ -74,8 +76,31 @@ const MyReports = () => {
   const handleEditView = (report, index) => {
     console.log("Edit report", report, index);
   };
-  const handleDelete = (report, index) => {
-    console.log("Delete report", report, index);
+
+  const handleDelete = async () => {
+    if (!reportToDelete) return;
+
+    try {
+      setLoading(true);
+
+      const response = await axios.delete(
+        `${backendUrl}/api/reports/delete/${reportToDelete._id}`,
+        { withCredentials: true }
+      );
+
+      if (!response.data.success) {
+        throw new Error(response.data.message);
+      }
+
+      toast.success(response.data.message);
+
+      setReports((prev) => prev.filter((r) => r._id !== reportToDelete._id));
+    } catch (error) {
+      toast.error(error.response?.data?.message || error.message);
+    } finally {
+      setLoading(false);
+      setDeleteModal(false);
+    }
   };
 
   // Filter reports
@@ -188,8 +213,10 @@ const MyReports = () => {
                       {report.urgency}
                     </td>
                     <td className="p-3 text-sm text-safecity-text">
-                      {report.reporter === null ? (
-                        "Anonymous"
+                      {report.anonymous ? (
+                        <span className="italic text-safecity-muted">
+                          Anonymous
+                        </span>
                       ) : (
                         <div className="flex flex-col">
                           <span>{report.reporter?.fullname}</span>
@@ -199,6 +226,7 @@ const MyReports = () => {
                         </div>
                       )}
                     </td>
+
                     <td className="p-3 text-sm text-safecity-text">
                       {new Date(
                         report.DateCreated || report.createdAt
@@ -220,8 +248,10 @@ const MyReports = () => {
                         Edit
                       </button>
                       <button
-                        ref={(el) => (buttonRefs.current[index] = el)}
-                        onClick={() => handleDelete(report, index)}
+                        onClick={() => {
+                          setReportToDelete(report);
+                          setDeleteModal(true);
+                        }}
                         className="py-1 px-3 rounded-lg bg-safecity-accent text-white hover:bg-safecity-accent-hover"
                       >
                         Delete
@@ -311,6 +341,40 @@ const MyReports = () => {
             >
               Close
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* delete modal */}
+      {deleteModal && (
+        <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50">
+          <div className="bg-safecity-dark rounded-lg p-6 w-80 text-center space-y-4 border border-gray-500">
+            <h2 className="text-lg font-bold text-red-600">Confirm Delete</h2>
+            <p className="text-safecity-muted text-sm">
+              Are you sure you want to delete this report?
+            </p>
+
+            <div className="flex justify-between mt-4">
+              <button
+                onClick={() => setDeleteModal(false)}
+                className="px-4 py-1 bg-gray-500 text-white rounded hover:bg-gray-600"
+              >
+                Cancel
+              </button>
+
+              <button
+                onClick={handleDelete}
+                disabled={loading}
+                className={`px-4 py-1 text-white rounded transition-colors
+                  ${
+                    loading
+                      ? "bg-red-600 cursor-not-allowed"
+                      : "bg-red-700 hover:bg-red-700"
+                  }`}
+              >
+                {loading ? "Deleting..." : "Delete"}
+              </button>
+            </div>
           </div>
         </div>
       )}
