@@ -21,7 +21,9 @@ import {
 } from "react-icons/fi";
 import MapView from "../MapView";
 
+
 const NearbySafetyServices = () => {
+  // State Management
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
   const [userLocation, setUserLocation] = useState(null);
@@ -30,9 +32,13 @@ const NearbySafetyServices = () => {
   const [viewMode, setViewMode] = useState("list");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [searchRadius, setSearchRadius] = useState(50000); // Increased to 50km
+  const [searchRadius, setSearchRadius] = useState(50000); // 50km initial radius
   const [isExtendingSearch, setIsExtendingSearch] = useState(false);
 
+  /**
+   * Service categories for filtering
+   * Note: Pharmacy and safe places removed as per requirements
+   */
   const serviceCategories = [
     {
       id: "all",
@@ -58,10 +64,9 @@ const NearbySafetyServices = () => {
       icon: <FiShield />,
       color: "text-orange-400",
     },
-    // REMOVED: Pharmacy and Safe Places categories
   ];
 
-  // Expanded Kenyan towns for better fallback coverage
+ 
   const kenyanTowns = [
     { name: "Nairobi", lat: -1.286389, lng: 36.817223 },
     { name: "Mombasa", lat: -4.0435, lng: 39.6682 },
@@ -83,10 +88,15 @@ const NearbySafetyServices = () => {
     { name: "Narok", lat: -1.0833, lng: 35.8667 },
   ];
 
+  // Initialize component - fetch location and services on mount
   useEffect(() => {
     fetchLocationAndServices();
   }, []);
 
+  /**
+   * Main function to fetch user location and safety services
+   * Handles geolocation, API calls, and fallback scenarios
+   */
   const fetchLocationAndServices = async () => {
     try {
       setLoading(true);
@@ -97,21 +107,17 @@ const NearbySafetyServices = () => {
           async (position) => {
             const { latitude, longitude } = position.coords;
             setUserLocation({ latitude, longitude });
-            console.log("User location found:", latitude, longitude);
 
-            // Try Overpass API first
+            // Primary search with initial radius
             let services = await fetchOverpassServices(latitude, longitude, searchRadius);
             
-            console.log(`Overpass returned ${services.length} services`);
-
-            // If no services found, extend search radius
+            // Extend search radius if no services found
             if (services.length === 0) {
-              console.log("No services found with current radius, extending search...");
               services = await fetchOverpassServices(latitude, longitude, 100000); // 100km
               setIsExtendingSearch(true);
             }
 
-            // If still no services, use fallback data
+            // Final fallback to estimated town data
             if (services.length === 0) {
               services = await getFallbackServices(latitude, longitude);
             }
@@ -120,12 +126,11 @@ const NearbySafetyServices = () => {
             setLoading(false);
           },
           (error) => {
-            console.error("Location error:", error);
             handleLocationError();
           },
           {
             enableHighAccuracy: true,
-            timeout: 20000, // Increased timeout
+            timeout: 20000,
             maximumAge: 60000,
           }
         );
@@ -133,27 +138,42 @@ const NearbySafetyServices = () => {
         handleLocationError();
       }
     } catch (error) {
-      console.error("Error in fetchLocationAndServices:", error);
       setError("Failed to load safety services. Please try again.");
       setLoading(false);
     }
   };
 
+ 
   const fetchOverpassServices = async (lat, lng, radius = 50000) => {
     try {
-      // Updated query - REMOVED pharmacy and safe places
+      // Comprehensive Overpass query for emergency services in Kenya
       const query = `
         [out:json][timeout:45];
         (
-          node["amenity"~"police|hospital|clinic|fire_station"](around:${radius},${lat},${lng});
-          way["amenity"~"police|hospital|clinic|fire_station"](around:${radius},${lat},${lng});
-          node["building"~"hospital|clinic"](around:${radius},${lat},${lng});
-          node["emergency"~"yes"](around:${radius},${lat},${lng});
+          // Police stations with various tags
+          node["amenity"="police"](around:${radius},${lat},${lng});
+          way["amenity"="police"](around:${radius},${lat},${lng});
+          relation["amenity"="police"](around:${radius},${lat},${lng});
+          
+          // Government offices that might be police stations
+          node["office"="government"]["government"="police"](around:${radius},${lat},${lng});
+          way["office"="government"]["government"="police"](around:${radius},${lat},${lng});
+          
+          // Hospitals and clinics
+          node["amenity"~"hospital|clinic"](around:${radius},${lat},${lng});
+          way["amenity"~"hospital|clinic"](around:${radius},${lat},${lng});
+          
+          // Fire stations
+          node["amenity"="fire_station"](around:${radius},${lat},${lng});
+          way["amenity"="fire_station"](around:${radius},${lat},${lng});
+          
+          // Emergency services
+          node["emergency"="yes"](around:${radius},${lat},${lng});
         );
         out center;
       `;
 
-      // Longer delay to avoid rate limiting
+      // Rate limiting protection
       await new Promise(resolve => setTimeout(resolve, 3000));
 
       const response = await fetch("https://overpass-api.de/api/interpreter", {
@@ -165,41 +185,37 @@ const NearbySafetyServices = () => {
       });
 
       if (!response.ok) {
-        if (response.status === 429) {
-          console.warn("Overpass API rate limit exceeded");
-          return [];
-        }
-        console.warn(`Overpass API error: ${response.status}`);
+        if (response.status === 429) return []; // Rate limited
         return [];
       }
 
       const data = await response.json();
       
       if (!data.elements || data.elements.length === 0) {
-        console.log("No elements found in Overpass response");
         return [];
       }
 
-      console.log(`Found ${data.elements} elements from Overpass`);
-
+      // Process raw Overpass data into service objects
       const services = data.elements
         .map((element, index) => {
-          
-          // Get coordinates
+          // Extract coordinates from different element types
           let coords = { lat: 0, lng: 0 };
           if (element.type === "node") {
             coords = { lat: element.lat, lng: element.lon };
           } else if (element.center) {
-            coords = { lat: element.center.lat, lng: element.center.lon };
+            coords = { lat: element.center.lat, lng: element.center.lng };
           } else {
             return null;
           }
 
-          const serviceType = element.tags?.amenity || element.tags?.building || element.tags?.emergency || "unknown";
+          const serviceType = element.tags?.amenity || element.tags?.building || 
+                            element.tags?.emergency || element.tags?.office || "unknown";
           const mappedType = mapServiceType(serviceType);
 
-          // REMOVED: Filter out pharmacy and safehouse types
-          if (mappedType === "unknown" || mappedType === "pharmacy" || mappedType === "safehouse") return null;
+          // Filter out unwanted service types
+          if (mappedType === "unknown" || mappedType === "pharmacy" || mappedType === "safehouse") {
+            return null;
+          }
 
           const name = element.tags?.name || generateServiceName(mappedType);
           const distance = calculateDistance(lat, lng, coords.lat, coords.lng);
@@ -223,19 +239,16 @@ const NearbySafetyServices = () => {
 
       return services;
     } catch (error) {
-      console.error("Error fetching from Overpass:", error);
-      return [];
+      return []; // Return empty array on any error
     }
   };
 
+
   const getFallbackServices = async (userLat, userLng) => {
-    // Find nearest town
     const nearestTown = findNearestTown(userLat, userLng);
-    console.log("Using fallback data for:", nearestTown.name);
-    
-    // Generate realistic services based on the nearest town
     return generateTownServices(nearestTown, userLat, userLng);
   };
+
 
   const findNearestTown = (userLat, userLng) => {
     let nearestTown = kenyanTowns[0];
@@ -256,8 +269,8 @@ const NearbySafetyServices = () => {
     };
   };
 
+  
   const generateTownServices = (town, userLat, userLng) => {
-    // Generate services for ANY Kenyan town - REMOVED pharmacy and safe places
     const baseServices = [
       {
         id: 1,
@@ -313,80 +326,115 @@ const NearbySafetyServices = () => {
         isRealData: false,
         isFallback: true,
       }
-      // REMOVED: Pharmacy and Safe Places services
     ];
 
     return baseServices;
   };
 
+
   const mapServiceType = (amenityType) => {
     const mapping = {
       police: "police",
-      hospital: "hospital",
+      hospital: "hospital", 
       clinic: "hospital",
       fire_station: "fire",
+      government: "police", // Map government offices with police tag to police
     };
-    // REMOVED: pharmacy and safehouse mappings
     return mapping[amenityType] || "unknown";
   };
 
+  /**
+   * Generates service name when OSM data doesn't have one
+   * @param {string} type - Service type
+   * @returns {string} Generated service name
+   */
   const generateServiceName = (type) => {
     const names = {
       police: "Police Station",
       hospital: "Medical Facility",
       fire: "Fire Station",
     };
-    // REMOVED: pharmacy and safehouse names
     return names[type] || "Service";
   };
 
+  /**
+   * Generates address from OSM tags with fallback options
+   * @param {Object} tags - OSM tags object
+   * @returns {string} Formatted address
+   */
   const generateAddress = (tags) => {
-    if (tags["addr:full"]) return tags["addr:full"];
+    if (!tags) return "Address not specified";
     
-    const addressParts = [
-      tags["addr:housenumber"],
+    const addressOptions = [
+      tags["addr:full"],
+      tags["addr:street"] && tags["addr:housenumber"] 
+        ? `${tags["addr:housenumber"]} ${tags["addr:street"]}`
+        : null,
       tags["addr:street"],
-      tags["addr:city"]
+      tags["addr:road"],
+      tags["name"],
+      tags["operator"]
     ].filter(part => part && part.trim() !== "");
-    
-    return addressParts.length > 0 ? addressParts.join(", ") : "Address not specified";
+
+    return addressOptions.length > 0 ? addressOptions[0] : "Address not specified";
   };
 
+  /**
+   * Extracts opening hours from OSM tags with defaults
+   * @param {string} type - Service type
+   * @param {Object} tags - OSM tags object
+   * @returns {string} Opening hours string
+   */
   const extractOpeningHours = (type, tags) => {
-    if (tags.opening_hours) return tags.opening_hours;
+    if (tags?.opening_hours) return tags.opening_hours;
     
     const defaultHours = {
       police: "24/7",
       hospital: "24/7",
       fire: "24/7",
     };
-    // REMOVED: pharmacy and safehouse hours
     
     return defaultHours[type] || "Hours not specified";
   };
 
+  /**
+   * Gets service features based on type
+   * @param {string} type - Service type
+   * @returns {Array} Array of feature strings
+   */
   const extractFeatures = (type) => {
     const features = {
       police: ["Law Enforcement", "Emergency Response", "Public Safety"],
       hospital: ["Medical Care", "Emergency Services", "Healthcare"],
       fire: ["Fire Response", "Rescue Services", "Emergency"],
     };
-    // REMOVED: pharmacy and safehouse features
     return features[type] || ["Public Service"];
   };
 
+  /**
+   * Estimates wait time for different service types
+   * @param {string} type - Service type
+   * @returns {string} Estimated wait time
+   */
   const estimateWaitTime = (type) => {
     const waitTimes = {
       hospital: "15-45 min",
       police: "5-15 min",
       fire: "Immediate",
     };
-    // REMOVED: pharmacy and safehouse wait times
     return waitTimes[type] || "Varies";
   };
 
+  /**
+   * Calculates distance between two coordinates using Haversine formula
+   * @param {number} lat1 - Start latitude
+   * @param {number} lon1 - Start longitude
+   * @param {number} lat2 - End latitude
+   * @param {number} lon2 - End longitude
+   * @returns {number} Distance in kilometers
+   */
   const calculateDistanceInKm = (lat1, lon1, lat2, lon2) => {
-    const R = 6371;
+    const R = 6371; // Earth's radius in km
     const dLat = (lat2 - lat1) * Math.PI / 180;
     const dLon = (lon2 - lon1) * Math.PI / 180;
     const a = 
@@ -397,6 +445,14 @@ const NearbySafetyServices = () => {
     return R * c;
   };
 
+  /**
+   * Formats distance for display (meters or kilometers)
+   * @param {number} lat1 - Start latitude
+   * @param {number} lon1 - Start longitude
+   * @param {number} lat2 - End latitude
+   * @param {number} lon2 - End longitude
+   * @returns {string} Formatted distance string
+   */
   const calculateDistance = (lat1, lon1, lat2, lon2) => {
     const distanceKm = calculateDistanceInKm(lat1, lon1, lat2, lon2);
     if (distanceKm < 1) {
@@ -405,6 +461,9 @@ const NearbySafetyServices = () => {
     return `${distanceKm.toFixed(1)}km`;
   };
 
+  /**
+   * Handles geolocation errors by falling back to Nairobi
+   */
   const handleLocationError = () => {
     setError("Unable to access your location. Using default location (Nairobi).");
     const defaultLocation = { latitude: -1.286389, longitude: 36.817223 };
@@ -418,10 +477,16 @@ const NearbySafetyServices = () => {
     setLoading(false);
   };
 
+  /**
+   * Retries the search for services
+   */
   const retrySearch = async () => {
     await fetchLocationAndServices();
   };
 
+  /**
+   * Extends search radius to find more services
+   */
   const extendSearchRadius = async () => {
     if (!userLocation) return;
     
@@ -437,6 +502,9 @@ const NearbySafetyServices = () => {
     setLoading(false);
   };
 
+  /**
+   * Filters services based on search term and selected category
+   */
   const filteredServices = safetyServices.filter((service) => {
     const matchesSearch =
       service.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -449,28 +517,51 @@ const NearbySafetyServices = () => {
     return matchesSearch && matchesCategory;
   });
 
+  /**
+   * Gets appropriate icon for service type
+   * @param {string} type - Service type
+   * @returns {React.Component} Icon component
+   */
   const getServiceIcon = (type) => {
     const category = serviceCategories.find((cat) => cat.id === type);
     return category ? category.icon : <FiMapPin />;
   };
 
+  /**
+   * Gets color class for service type
+   * @param {string} type - Service type
+   * @returns {string} Tailwind color class
+   */
   const getServiceColor = (type) => {
     const category = serviceCategories.find((cat) => cat.id === type);
     return category ? category.color : "text-gray-400";
   };
 
+  /**
+   * Handles phone call initiation
+   * @param {string} phone - Phone number to call
+   */
   const handleCallService = (phone) => {
     if (phone && window.confirm(`Call ${phone}?`)) {
       window.open(`tel:${phone}`);
     }
   };
 
+  /**
+   * Opens Google Maps directions to service location
+   * @param {Object} coordinates - {lat, lng} object
+   */
   const handleGetDirections = (coordinates) => {
     const { lat, lng } = coordinates;
     const url = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
     window.open(url, "_blank");
   };
 
+  /**
+   * Renders individual service card component
+   * @param {Object} service - Service object
+   * @returns {React.Component} Service card JSX
+   */
   const renderServiceCard = (service) => (
     <div
       key={service.id}
@@ -561,9 +652,188 @@ const NearbySafetyServices = () => {
     </div>
   );
 
+  /**
+   * Renders detailed service view when a service is selected
+   * @returns {React.Component} Service detail JSX
+   */
+  const renderServiceDetail = () => {
+    if (!selectedService) return null;
+
+    return (
+      <div className="min-h-screen bg-safecity-dark p-4 md:p-6">
+        <button
+          onClick={() => setSelectedService(null)}
+          className="flex items-center space-x-2 text-safecity-accent hover:text-safecity-accent-hover mb-6 transition-colors"
+        >
+          <FiChevronRight className="rotate-180" />
+          <span>Back to Services</span>
+        </button>
+
+        <div className="bg-safecity-surface rounded-xl p-6">
+          <div className="flex items-start justify-between mb-6">
+            <div className="flex items-center space-x-4">
+              <div
+                className={`w-12 h-12 rounded-xl bg-safecity-accent bg-opacity-20 flex items-center justify-center ${getServiceColor(
+                  selectedService.type
+                )} text-xl`}
+              >
+                {getServiceIcon(selectedService.type)}
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-safecity-text">
+                  {selectedService.name}
+                </h1>
+                <div className="flex items-center space-x-4 text-sm text-safecity-muted mt-1">
+                  <span>{selectedService.distance} away</span>
+                  <span>•</span>
+                  <span
+                    className={
+                      selectedService.isOpen ? "text-green-400" : "text-red-400"
+                    }
+                  >
+                    {selectedService.isOpen ? "Open" : "Closed"}
+                  </span>
+                  <span>•</span>
+                  <span className={selectedService.isRealData ? "text-green-400" : "text-yellow-400"}>
+                    {selectedService.isRealData ? "Verified Location" : "Estimated Location"}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex space-x-2">
+              <button className="p-2 rounded-lg bg-safecity-dark text-safecity-muted hover:text-safecity-accent transition-colors">
+                <FiHeart />
+              </button>
+              <button className="p-2 rounded-lg bg-safecity-dark text-safecity-muted hover:text-safecity-accent transition-colors">
+                <FiShare2 />
+              </button>
+            </div>
+          </div>
+
+          {/* Map View for Service Location */}
+          <div className="bg-safecity-dark rounded-xl h-48 mb-6 overflow-hidden">
+            <MapView
+              center={[
+                selectedService.coordinates.lat,
+                selectedService.coordinates.lng,
+              ]}
+              markers={[
+                {
+                  lat: selectedService.coordinates.lat,
+                  lng: selectedService.coordinates.lng,
+                  name: selectedService.name,
+                  address: selectedService.address,
+                  type: selectedService.type,
+                },
+              ]}
+              zoom={15}
+              style={{ height: "100%", width: "100%" }}
+            />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <div>
+              <h3 className="text-lg font-semibold text-safecity-text mb-3">
+                Contact Information
+              </h3>
+              <div className="space-y-3">
+                <div className="flex items-center space-x-3">
+                  <FiMapPin className="text-safecity-muted" />
+                  <span className="text-safecity-text">
+                    {selectedService.address}
+                  </span>
+                </div>
+                {selectedService.phone ? (
+                  <div className="flex items-center space-x-3">
+                    <FiPhone className="text-safecity-muted" />
+                    <span className="text-safecity-text">
+                      {selectedService.phone}
+                    </span>
+                  </div>
+                ) : (
+                  <div className="flex items-center space-x-3 text-safecity-muted">
+                    <FiPhone className="text-safecity-muted" />
+                    <span>Phone number not available</span>
+                  </div>
+                )}
+                <div className="flex items-center space-x-3">
+                  <FiClock className="text-safecity-muted" />
+                  <span className="text-safecity-text">
+                    {selectedService.hours}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <h3 className="text-lg font-semibold text-safecity-text mb-3">
+                Service Details
+              </h3>
+              <div className="space-y-2">
+                {selectedService.features.map((feature, index) => (
+                  <div key={index} className="flex items-center space-x-2">
+                    <div className="w-2 h-2 bg-safecity-accent rounded-full"></div>
+                    <span className="text-safecity-text text-sm">
+                      {feature}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="flex space-x-3">
+            {selectedService.phone ? (
+              <button
+                onClick={() => handleCallService(selectedService.phone)}
+                className="flex-1 bg-safecity-accent hover:bg-safecity-accent-hover text-white py-3 rounded-lg transition-colors flex items-center justify-center space-x-2"
+              >
+                <FiPhone />
+                <span>Call Now</span>
+              </button>
+            ) : (
+              <button
+                disabled
+                className="flex-1 bg-gray-600 text-gray-400 py-3 rounded-lg flex items-center justify-center space-x-2 cursor-not-allowed"
+              >
+                <FiPhone />
+                <span>Phone Not Available</span>
+              </button>
+            )}
+            <button
+              onClick={() => handleGetDirections(selectedService.coordinates)}
+              className="flex-1 bg-safecity-surface border border-safecity-accent text-safecity-accent hover:bg-safecity-accent hover:text-white py-3 rounded-lg transition-colors flex items-center justify-center space-x-2"
+            >
+              <FiNavigation />
+              <span>Get Directions</span>
+            </button>
+          </div>
+
+          {!selectedService.isRealData && (
+            <div className="mt-6 p-4 bg-yellow-500 bg-opacity-10 border border-yellow-500 border-opacity-20 rounded-lg">
+              <div className="flex items-center space-x-2 text-yellow-400">
+                <FiInfo />
+                <span className="text-sm">
+                  This is an estimated location. The actual service location may vary.
+                </span>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  // Render service detail view if service is selected
+  if (selectedService) {
+    return renderServiceDetail();
+  }
+
+  // Main component render
   return (
     <div className="min-h-screen bg-safecity-dark p-4 md:p-6">
-      {/* Header */}
+      {/* Header Section */}
       <div className="mb-8">
         <div className="flex items-center justify-between mb-4">
           <div>
@@ -586,7 +856,7 @@ const NearbySafetyServices = () => {
         </div>
       </div>
 
-      {/* Search and Filter */}
+      {/* Search and Filter Section */}
       <div className="mb-6">
         <div className="flex flex-col md:flex-row gap-4">
           <div className="flex-1 relative">
@@ -609,7 +879,7 @@ const NearbySafetyServices = () => {
         </div>
       </div>
 
-      {/* Category Filter - NOW ONLY 4 CATEGORIES */}
+      {/* Category Filter Section */}
       <div className="mb-6 overflow-x-auto">
         <div className="flex space-x-2 pb-4 min-w-max">
           {serviceCategories.map((category) => (
@@ -676,7 +946,7 @@ const NearbySafetyServices = () => {
         </div>
       )}
 
-      {/* Services Grid */}
+      {/* Services Display - Map or List View */}
       {!loading && viewMode === "map" ? (
         <div className="h-96 rounded-xl overflow-hidden">
           {userLocation ? (
@@ -746,7 +1016,7 @@ const NearbySafetyServices = () => {
         </div>
       )}
 
-      {/* Emergency Quick Action */}
+      {/* Emergency Quick Action Button */}
       <div className="fixed bottom-6 right-6">
         <button className="bg-red-500 hover:bg-red-600 text-white p-4 rounded-full shadow-lg transform hover:scale-110 transition-all duration-200 flex items-center justify-center">
           <FiAlertCircle className="text-xl" />

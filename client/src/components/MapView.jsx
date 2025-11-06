@@ -10,11 +10,40 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
 });
 
+// Custom icons for different service types
+const createCustomIcon = (type) => {
+  const colors = {
+    police: 'blue',
+    hospital: 'red',
+    fire: 'orange',
+    all: 'green'
+  };
+
+  const color = colors[type] || 'gray';
+
+  return L.divIcon({
+    className: 'custom-marker',
+    html: `
+      <div style="
+        background-color: ${color}; 
+        width: 20px; 
+        height: 20px; 
+        border-radius: 50%; 
+        border: 3px solid white;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+      "></div>
+    `,
+    iconSize: [26, 26],
+    iconAnchor: [13, 13],
+  });
+};
+
 const MapView = ({ center, markers = [], zoom = 13, style = {}, onMarkerClick }) => {
   const mapRef = useRef(null);
   const mapInstanceRef = useRef(null);
   const markersRef = useRef([]);
 
+  // Initialize map - runs only once
   useEffect(() => {
     if (!mapRef.current) return;
 
@@ -35,59 +64,77 @@ const MapView = ({ center, markers = [], zoom = 13, style = {}, onMarkerClick })
     };
   }, []);
 
+  // Update map center and zoom
   useEffect(() => {
     if (!mapInstanceRef.current) return;
-
-    // Update map center and zoom when props change
     mapInstanceRef.current.setView(center, zoom);
   }, [center, zoom]);
 
+  // Update markers - FIXED VERSION
   useEffect(() => {
-    if (!mapInstanceRef.current) return;
+    if (!mapInstanceRef.current || !markers) return;
+
+    console.log(`🔄 Updating map with ${markers.length} markers`);
 
     // Clear existing markers
     markersRef.current.forEach(marker => {
-      mapInstanceRef.current.removeLayer(marker);
+      if (marker && mapInstanceRef.current) {
+        mapInstanceRef.current.removeLayer(marker);
+      }
     });
     markersRef.current = [];
 
     // Add new markers
-    markers.forEach((marker) => {
-      const leafletMarker = L.marker([marker.lat, marker.lng])
-        .addTo(mapInstanceRef.current)
-        .bindPopup(`
-          <div class="text-safecity-dark">
-            <h3 class="font-bold text-sm">${marker.name}</h3>
-            <p class="text-xs">${marker.address}</p>
-            ${marker.type ? `<p class="text-xs text-gray-600 capitalize">${marker.type}</p>` : ''}
-          </div>
-        `);
+    if (markers.length > 0) {
+      markers.forEach((marker) => {
+        try {
+          const customIcon = createCustomIcon(marker.type);
+          
+          const leafletMarker = L.marker([marker.lat, marker.lng], { icon: customIcon })
+            .addTo(mapInstanceRef.current)
+            .bindPopup(`
+              <div style="min-width: 200px;">
+                <h3 style="font-weight: bold; margin: 0 0 8px 0; color: #1f2937;">${marker.name}</h3>
+                <p style="margin: 0 0 4px 0; color: #6b7280; font-size: 12px;">${marker.address}</p>
+                ${marker.type ? `<p style="margin: 0; color: #374151; font-size: 11px; text-transform: capitalize;">${marker.type}</p>` : ''}
+              </div>
+            `);
 
-      // Store marker reference
-      markersRef.current.push(leafletMarker);
+          // Store marker reference
+          markersRef.current.push(leafletMarker);
 
-      // Add click event if callback provided
-      if (onMarkerClick) {
-        leafletMarker.on("click", () => {
-          onMarkerClick(marker);
-        });
-      }
-    });
-
-    // If only one marker, open its popup automatically
-    if (markers.length === 1) {
-      setTimeout(() => {
-        if (markersRef.current[0]) {
-          markersRef.current[0].openPopup();
+          // Add click event if callback provided
+          if (onMarkerClick) {
+            leafletMarker.on("click", () => {
+              onMarkerClick(marker);
+            });
+          }
+        } catch (error) {
+          console.error("Error creating marker:", error);
         }
-      }, 500);
+      });
+
+      // Fit map to show all markers if we have multiple
+      if (markers.length > 1) {
+        const group = new L.featureGroup(markersRef.current);
+        mapInstanceRef.current.fitBounds(group.getBounds().pad(0.1));
+      }
+      // If only one marker, center on it and open popup
+      else if (markers.length === 1) {
+        setTimeout(() => {
+          if (markersRef.current[0]) {
+            markersRef.current[0].openPopup();
+          }
+        }, 500);
+      }
     }
-  }, [markers, onMarkerClick]);
+
+  }, [markers, onMarkerClick]); // This effect runs every time markers change
 
   return (
     <div 
       ref={mapRef} 
-      className="w-full rounded-xl"
+      className="w-full rounded-xl border-2 border-gray-600"
       style={{ height: style.height || '400px', ...style }}
     />
   );
