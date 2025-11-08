@@ -13,10 +13,23 @@ import EmergencyContacts from "./components/userComponents/EmergencyContacts";
 import Settings from "./components/userComponents/Settings";
 import HelpCenter from "./components/userComponents/HelpCenter";
 import NotFound from "./components/NotFound";
+import { useState } from "react";
+import { useEffect } from "react";
 
 const App = () => {
+  const [darkMode, setDarkMode] = useState(true);
+  const [lang, setLang] = useState("en");
+
+  useEffect(() => {
+    if (darkMode) {
+      document.body.classList.remove("light-mode");
+    } else {
+      document.body.classList.add("light-mode");
+    }
+  }, [darkMode]);
+
   return (
-    <>
+    <div className={darkMode ? "" : "light-mode"}>
       <ToastContainer
         position="top-right"
         autoClose={3000}
@@ -41,17 +54,30 @@ const App = () => {
           <Route path="add-report" element={<Report />} />
           <Route path="my-reports" element={<MyReports />} />
           <Route path="safe-city-tips" element={<SafetyTips />} />
-          <Route path="nearby-safety-services" element={<NearbySafetyServices />} />
+          <Route
+            path="nearby-safety-services"
+            element={<NearbySafetyServices />}
+          />
           <Route path="chat" element={<ChatSupport />} />
           <Route path="emergency-contacts" element={<EmergencyContacts />} />
-          <Route path="settings" element={<Settings />} />
+          <Route
+            path="settings"
+            element={
+              <Settings
+                darkMode={darkMode}
+                setDarkMode={setDarkMode}
+                lang={lang}
+                setLang={setLang}
+              />
+            }
+          />
           <Route path="help-center" element={<HelpCenter />} />
         </Route>
 
         {/* 404 */}
         <Route path="*" element={<NotFound />} />
       </Routes>
-    </>
+    </div>
   );
 };
 

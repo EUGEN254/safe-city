@@ -1,4 +1,3 @@
-
 export const ACCOUNT_CREATION_TEMPLATE = `
 <!DOCTYPE html>
 <html lang="en">
@@ -93,4 +92,89 @@ export const ACCOUNT_CREATION_TEMPLATE = `
 </html>
 
 
-`
+`;
+
+
+export const notificationEnabledEmailTemplate = (fullname, notificationType, enabled) => `
+  <!DOCTYPE html>
+  <html>
+    <head>
+      <meta charset="UTF-8" />
+      <title>Notification ${enabled ? "Enabled" : "Disabled"}</title>
+      <style>
+        body {
+          font-family: 'Arial', sans-serif;
+          background-color: #f9fafb;
+          margin: 0;
+          padding: 0;
+        }
+        .container {
+          max-width: 600px;
+          background-color: #ffffff;
+          margin: 30px auto;
+          border-radius: 10px;
+          overflow: hidden;
+          box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+          background-color: ${enabled ? "#2ecc71" : "#e63946"};
+          color: #ffffff;
+          text-align: center;
+          padding: 20px;
+          font-size: 22px;
+          font-weight: bold;
+        }
+        .content {
+          padding: 30px;
+          color: #333333;
+          line-height: 1.6;
+        }
+        .content h2 {
+          color: ${enabled ? "#2ecc71" : "#e63946"};
+        }
+        .footer {
+          background-color: #f5f5f5;
+          text-align: center;
+          font-size: 14px;
+          color: #777777;
+          padding: 15px;
+        }
+        .btn {
+          display: inline-block;
+          padding: 10px 18px;
+          background-color: ${enabled ? "#2ecc71" : "#e63946"};
+          color: white;
+          text-decoration: none;
+          border-radius: 6px;
+          font-weight: bold;
+          margin-top: 15px;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          SafeCity Notification ${enabled ? "Enabled" : "Disabled"}
+        </div>
+        <div class="content">
+          <h2>Hello ${fullname || "User"},</h2>
+          <p>
+            You’ve successfully <strong>${enabled ? "enabled" : "disabled"} ${notificationType}</strong> notifications
+            on your SafeCity account.
+          </p>
+          ${
+            enabled
+              ? `<p>We’ll keep you informed about important updates related to your chosen category.</p>`
+              : `<p>You will no longer receive updates for this category, but you can re-enable them anytime.</p>`
+          }
+          <a href="https://safecity.example.com/settings" class="btn">Manage Notifications</a>
+        </div>
+        <div class="footer">
+          &copy; ${new Date().getFullYear()} SafeCity. All rights reserved.
+        </div>
+      </div>
+    </body>
+  </html>
+`;
+
+

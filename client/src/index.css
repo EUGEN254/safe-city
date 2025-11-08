@@ -122,3 +122,20 @@ body::-webkit-scrollbar {
   outline: 2px solid rgba(230,57,70,0.12);
   outline-offset: 2px;
 }
+
+body.light-mode {
+  background-color: var(--color-dark); /* now var(--color-dark) will point to light-mode value */
+  color: var(--color-text);
+}
+
+
+/* Light Mode Overrides */
+/* Light Mode Overrides - Softer Palette */
+.light-mode {
+  --color-dark: #f0f1f5;       /* slightly gray page background */
+  --color-surface: #ffffff;    /* keep cards white but can be #fdfdfd for even softer */
+  --color-accent: #e63946;     /* accent stays same */
+  --color-accent-hover: #ff6b6b; /* slightly softer hover */
+  --color-text: #2c2c2c;       /* softer dark text instead of pure black */
+  --color-muted: #707070;      /* muted text less harsh */
+}

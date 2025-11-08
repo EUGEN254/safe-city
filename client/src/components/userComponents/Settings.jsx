@@ -1,130 +1,253 @@
-import React, { useState } from 'react';
-import { 
-  FiSettings, 
-  FiBell, 
-  FiShield, 
-  FiMap, 
-  FiUser, 
-  FiMoon, 
+import React, { useState, useEffect } from "react";
+import {
+  FiSettings,
+  FiBell,
+  FiShield,
+  FiMap,
+  FiUser,
+  FiMoon,
   FiSun,
-  FiHelpCircle,
-  FiLogOut,
-  FiTrash2,
   FiChevronRight,
-  FiDownload,
   FiGlobe,
   FiEye,
-  FiEyeOff
-} from 'react-icons/fi';
+  FiEyeOff,
+} from "react-icons/fi";
+import axios from "axios";
+import { toast } from "react-toastify";
+import { useSafeCity } from "../../context/SafeCity";
+import { languages } from "../../assets/assets";
 
-const Settings = () => {
-  const [activeSection, setActiveSection] = useState('general');
-  const [darkMode, setDarkMode] = useState(true);
+const Settings = ({ darkMode, setDarkMode, lang, setLang }) => {
+  const [activeSection, setActiveSection] = useState("general");
+  const { backendUrl } = useSafeCity();
+  const [region, setRegion] = useState("Unknown");
+
+  // Notification states
   const [notifications, setNotifications] = useState({
-    emergencyAlerts: true,
-    safetyUpdates: true,
+    emergencyAlerts: false,
+    safetyUpdates: false,
     communityReports: false,
-    locationBased: true
+    locationBased: false,
   });
+  const [loadingNotifications, setLoadingNotifications] = useState({});
+
+  // Privacy states
   const [privacySettings, setPrivacySettings] = useState({
     shareLocation: true,
     showOnMap: false,
     anonymousReporting: true,
-    dataCollection: true
+    dataCollection: true,
   });
 
-  const handleNotificationToggle = (key) => {
-    setNotifications(prev => ({
-      ...prev,
-      [key]: !prev[key]
-    }));
-  };
+  // Account password states
+  const [passwords, setPasswords] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+  });
+  const [showPassword, setShowPassword] = useState({
+    current: false,
+    new: false,
+    confirm: false,
+  });
+  const [loadingPassword, setLoadingPassword] = useState(false);
 
-  const handlePrivacyToggle = (key) => {
-    setPrivacySettings(prev => ({
-      ...prev,
-      [key]: !prev[key]
-    }));
-  };
-
-  const sections = [
-    {
-      id: 'general',
-      title: 'General Settings',
-      icon: <FiSettings className="text-xl" />,
-      description: 'App preferences and basic settings'
-    },
-    {
-      id: 'notifications',
-      title: 'Notifications',
-      icon: <FiBell className="text-xl" />,
-      description: 'Manage your alert preferences'
-    },
-    {
-      id: 'privacy',
-      title: 'Privacy & Security',
-      icon: <FiShield className="text-xl" />,
-      description: 'Control your data and privacy'
-    },
-    {
-      id: 'location',
-      title: 'Location Services',
-      icon: <FiMap className="text-xl" />,
-      description: 'Location sharing preferences'
-    },
-    {
-      id: 'account',
-      title: 'Account',
-      icon: <FiUser className="text-xl" />,
-      description: 'Manage your account settings'
+  // ---------------- Notifications ----------------
+  const enableNotification = async (notificationType, enabled) => {
+    try {
+      const response = await axios.post(
+        `${backendUrl}/api/settings/notification`,
+        { notificationType, enabled },
+        { withCredentials: true }
+      );
+      if (!response.data.success) throw new Error(response.data.message);
+      toast.success("Notification preference updated!");
+    } catch (error) {
+      toast.error(error.message || "Failed to update notification.");
     }
+  };
+
+  const handleNotificationToggle = async (key) => {
+    if (loadingNotifications[key]) return;
+    const newValue = !notifications[key];
+    setLoadingNotifications((prev) => ({ ...prev, [key]: true }));
+    setNotifications((prev) => ({ ...prev, [key]: newValue }));
+    try {
+      await enableNotification(key, newValue);
+    } finally {
+      setLoadingNotifications((prev) => ({ ...prev, [key]: false }));
+    }
+  };
+
+  // ---------------- Privacy ----------------
+  const handlePrivacyToggle = async (key) => {
+    const newValue = !privacySettings[key];
+    setPrivacySettings((prev) => ({ ...prev, [key]: newValue }));
+
+    try {
+      await axios.post(
+        `${backendUrl}/api/settings/privacy`,
+        { key, value: newValue },
+        { withCredentials: true }
+      );
+      toast.success("Privacy setting updated!");
+    } catch (err) {
+      toast.error("Failed to update privacy setting");
+      setPrivacySettings((prev) => ({ ...prev, [key]: !newValue }));
+    }
+  };
+
+  // ---------------- Account Password ----------------
+  const handlePasswordChange = async () => {
+    if (passwords.newPassword !== passwords.confirmPassword) {
+      return toast.error("New password and confirm password do not match!");
+    }
+    setLoadingPassword(true);
+    try {
+      const res = await axios.post(
+        `${backendUrl}/api/settings/account/change-password`,
+        {
+          currentPassword: passwords.currentPassword,
+          newPassword: passwords.newPassword,
+        },
+        { withCredentials: true }
+      );
+      if (res.data.success) {
+        toast.success(res.data.message);
+        setPasswords({ currentPassword: "", newPassword: "", confirmPassword: "" });
+      } else {
+        toast.error(res.data.message);
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to change password");
+    } finally {
+      setLoadingPassword(false);
+    }
+  };
+
+  // ---------------- Fetch region ----------------
+  useEffect(() => {
+    const fetchRegion = async () => {
+      try {
+        const res = await fetch("https://ipapi.co/json/");
+        const data = await res.json();
+        setRegion(`${data.country_name} / ${data.country_code}`);
+      } catch (err) {
+        setRegion("Unknown / ?");
+      }
+    };
+    fetchRegion();
+  }, []);
+
+  // ---------------- Notification & Privacy Descriptions ----------------
+  const getNotificationDescription = (key) => {
+    const descriptions = {
+      emergencyAlerts:
+        lang === "en"
+          ? "Immediate safety alerts in your area"
+          : "Arifa za usalama mara moja katika eneo lako",
+      safetyUpdates:
+        lang === "en"
+          ? "General safety news and updates"
+          : "Habari na masasisho ya usalama",
+      communityReports:
+        lang === "en"
+          ? "Reports from other SafeCity users"
+          : "Ripoti kutoka kwa watumiaji wengine wa SafeCity",
+      locationBased:
+        lang === "en"
+          ? "Alerts based on your current location"
+          : "Arifa kulingana na eneo ulipo sasa",
+    };
+    return descriptions[key] || "";
+  };
+
+  const getPrivacyDescription = (key) => {
+    const descriptions = {
+      shareLocation:
+        lang === "en"
+          ? "Share your location for better safety services"
+          : "Shiriki eneo lako kwa huduma bora za usalama",
+      showOnMap:
+        lang === "en"
+          ? "Make your location visible to trusted contacts"
+          : "Fanya eneo lako liwe dhahiri kwa waliokubaliwa",
+      anonymousReporting:
+        lang === "en"
+          ? "Submit reports without revealing identity"
+          : "Tuma ripoti bila kufichua utambulisho",
+      dataCollection:
+        lang === "en"
+          ? "Help improve SafeCity with anonymous data"
+          : "Saidia kuboresha SafeCity kwa data isiyo ya kibinafsi",
+    };
+    return descriptions[key] || "";
+  };
+
+  // ---------------- Sidebar Sections ----------------
+  const sections = [
+    { id: "general", title: languages[lang].general, icon: <FiSettings className="text-xl" />, description: "App preferences and basic settings" },
+    { id: "notifications", title: languages[lang].notifications, icon: <FiBell className="text-xl" />, description: "Manage your alert preferences" },
+    { id: "privacy", title: languages[lang].privacy, icon: <FiShield className="text-xl" />, description: "Control your data and privacy" },
+    { id: "location", title: languages[lang].location, icon: <FiMap className="text-xl" />, description: "Location sharing preferences" },
+    { id: "account", title: languages[lang].account, icon: <FiUser className="text-xl" />, description: "Manage your account settings" },
   ];
 
+  // ---------------- Render Sections ----------------
   const renderGeneralSettings = () => (
     <div className="space-y-6">
+      {/* Dark Mode */}
       <div className="bg-safecity-surface rounded-xl p-6">
-        <h3 className="text-lg font-semibold text-safecity-text mb-4">Appearance</h3>
+        <h3 className="text-lg font-semibold text-safecity-text mb-4">
+          {languages[lang].appearance}
+        </h3>
         <div className="flex items-center justify-between py-3">
           <div className="flex items-center space-x-3">
             {darkMode ? <FiMoon className="text-safecity-accent" /> : <FiSun className="text-yellow-500" />}
             <div>
-              <p className="text-safecity-text font-medium">Dark Mode</p>
-              <p className="text-safecity-muted text-sm">Switch between light and dark themes</p>
+              <p className="text-safecity-text font-medium">{languages[lang].darkMode}</p>
+              <p className="text-safecity-muted text-sm">{languages[lang].darkModeDesc}</p>
             </div>
           </div>
           <button
             onClick={() => setDarkMode(!darkMode)}
-            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-              darkMode ? 'bg-safecity-accent' : 'bg-gray-600'
-            }`}
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${darkMode ? "bg-safecity-accent" : "bg-gray-600"}`}
           >
-            <span
-              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                darkMode ? 'translate-x-6' : 'translate-x-1'
-              }`}
-            />
+            <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${darkMode ? "translate-x-6" : "translate-x-1"}`} />
           </button>
         </div>
       </div>
 
+      {/* Language & Region */}
       <div className="bg-safecity-surface rounded-xl p-6">
-        <h3 className="text-lg font-semibold text-safecity-text mb-4">Language & Region</h3>
+        <h3 className="text-lg font-semibold text-safecity-text mb-4">
+          {languages[lang].language} & {languages[lang].region}
+        </h3>
+
         <div className="flex items-center justify-between py-3 border-b border-gray-600">
           <div className="flex items-center space-x-3">
             <FiGlobe className="text-safecity-muted" />
             <div>
-              <p className="text-safecity-text font-medium">Language</p>
-              <p className="text-safecity-muted text-sm">English (US)</p>
+              <p className="text-safecity-text font-medium">{languages[lang].language}</p>
+              <select
+                value={lang}
+                onChange={(e) => setLang(e.target.value)}
+                className="bg-safecity-surface text-safecity-text px-3 py-1 rounded-md mt-1"
+              >
+                <option value="en">{languages.en.english}</option>
+                <option value="sw">{languages.sw.kiswahili}</option>
+              </select>
             </div>
           </div>
           <FiChevronRight className="text-safecity-muted" />
         </div>
+
         <div className="flex items-center justify-between py-3">
           <div className="flex items-center space-x-3">
             <FiMap className="text-safecity-muted" />
             <div>
-              <p className="text-safecity-text font-medium">Region</p>
-              <p className="text-safecity-muted text-sm">United States</p>
+              <p className="text-safecity-text font-medium">{languages[lang].region}</p>
+              <p className="text-safecity-muted text-sm">{region}</p>
             </div>
           </div>
           <FiChevronRight className="text-safecity-muted" />
@@ -136,28 +259,19 @@ const Settings = () => {
   const renderNotificationSettings = () => (
     <div className="space-y-6">
       <div className="bg-safecity-surface rounded-xl p-6">
-        <h3 className="text-lg font-semibold text-safecity-text mb-4">Alert Preferences</h3>
+        <h3 className="text-lg font-semibold text-safecity-text mb-4">{languages[lang].notifications}</h3>
         {Object.entries(notifications).map(([key, value]) => (
           <div key={key} className="flex items-center justify-between py-3 border-b border-gray-600 last:border-b-0">
             <div>
-              <p className="text-safecity-text font-medium capitalize">
-                {key.replace(/([A-Z])/g, ' $1').trim()}
-              </p>
-              <p className="text-safecity-muted text-sm">
-                {getNotificationDescription(key)}
-              </p>
+              <p className="text-safecity-text font-medium capitalize">{key.replace(/([A-Z])/g, " $1").trim()}</p>
+              <p className="text-safecity-muted text-sm">{getNotificationDescription(key)}</p>
             </div>
             <button
               onClick={() => handleNotificationToggle(key)}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                value ? 'bg-safecity-accent' : 'bg-gray-600'
-              }`}
+              disabled={loadingNotifications[key]}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${value ? "bg-safecity-accent" : "bg-gray-600"} ${loadingNotifications[key] ? "opacity-50 cursor-not-allowed" : ""}`}
             >
-              <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                  value ? 'translate-x-6' : 'translate-x-1'
-                }`}
-              />
+              <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${value ? "translate-x-6" : "translate-x-1"}`} />
             </button>
           </div>
         ))}
@@ -168,159 +282,75 @@ const Settings = () => {
   const renderPrivacySettings = () => (
     <div className="space-y-6">
       <div className="bg-safecity-surface rounded-xl p-6">
-        <h3 className="text-lg font-semibold text-safecity-text mb-4">Privacy Controls</h3>
+        <h3 className="text-lg font-semibold text-safecity-text mb-4">{languages[lang].privacy}</h3>
         {Object.entries(privacySettings).map(([key, value]) => (
           <div key={key} className="flex items-center justify-between py-3 border-b border-gray-600 last:border-b-0">
             <div>
-              <p className="text-safecity-text font-medium capitalize">
-                {key.replace(/([A-Z])/g, ' $1').trim()}
-              </p>
-              <p className="text-safecity-muted text-sm">
-                {getPrivacyDescription(key)}
-              </p>
+              <p className="text-safecity-text font-medium capitalize">{key.replace(/([A-Z])/g, " $1").trim()}</p>
+              <p className="text-safecity-muted text-sm">{getPrivacyDescription(key)}</p>
             </div>
             <button
               onClick={() => handlePrivacyToggle(key)}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                value ? 'bg-safecity-accent' : 'bg-gray-600'
-              }`}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${value ? "bg-safecity-accent" : "bg-gray-600"}`}
             >
-              <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                  value ? 'translate-x-6' : 'translate-x-1'
-                }`}
-              />
+              <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${value ? "translate-x-6" : "translate-x-1"}`} />
             </button>
           </div>
         ))}
-      </div>
-
-      <div className="bg-safecity-surface rounded-xl p-6">
-        <h3 className="text-lg font-semibold text-safecity-text mb-4">Data Management</h3>
-        <button className="flex items-center justify-between w-full py-3 border-b border-gray-600 text-safecity-text hover:text-safecity-accent transition-colors">
-          <div className="flex items-center space-x-3">
-            <FiDownload className="text-safecity-muted" />
-            <span>Export My Data</span>
-          </div>
-          <FiChevronRight className="text-safecity-muted" />
-        </button>
-        <button className="flex items-center justify-between w-full py-3 text-red-400 hover:text-red-300 transition-colors">
-          <div className="flex items-center space-x-3">
-            <FiTrash2 className="text-red-400" />
-            <span>Delete Account</span>
-          </div>
-          <FiChevronRight className="text-red-400" />
-        </button>
-      </div>
-    </div>
-  );
-
-  const renderLocationSettings = () => (
-    <div className="space-y-6">
-      <div className="bg-safecity-surface rounded-xl p-6">
-        <h3 className="text-lg font-semibold text-safecity-text mb-4">Location Services</h3>
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-safecity-text font-medium">Precise Location</p>
-              <p className="text-safecity-muted text-sm">Use your precise location for better safety alerts</p>
-            </div>
-            <button className="bg-safecity-accent hover:bg-safecity-accent-hover text-white px-4 py-2 rounded-lg transition-colors">
-              Enable
-            </button>
-          </div>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-safecity-text font-medium">Background Location</p>
-              <p className="text-safecity-muted text-sm">Receive alerts even when app is not in use</p>
-            </div>
-            <button className="bg-gray-600 hover:bg-gray-500 text-white px-4 py-2 rounded-lg transition-colors">
-              Enable
-            </button>
-          </div>
-        </div>
       </div>
     </div>
   );
 
   const renderAccountSettings = () => (
-    <div className="space-y-6">
-      <div className="bg-safecity-surface rounded-xl p-6">
-        <h3 className="text-lg font-semibold text-safecity-text mb-4">Account Information</h3>
-        <div className="space-y-4">
-          <div className="flex justify-between items-center py-2">
-            <span className="text-safecity-muted">Email</span>
-            <span className="text-safecity-text">user@example.com</span>
-          </div>
-          <div className="flex justify-between items-center py-2">
-            <span className="text-safecity-muted">Phone</span>
-            <span className="text-safecity-text">+1 (555) 123-4567</span>
-          </div>
-          <div className="flex justify-between items-center py-2">
-            <span className="text-safecity-muted">Member since</span>
-            <span className="text-safecity-text">January 2024</span>
-          </div>
+    <div className="space-y-6 bg-safecity-surface rounded-xl p-6">
+      <h3 className="text-lg font-semibold text-safecity-text mb-4">{languages[lang].account}</h3>
+      {["currentPassword", "newPassword", "confirmPassword"].map((field) => (
+        <div key={field} className="relative mb-4">
+          <input
+            type={showPassword[field.split("Password")[0]] ? "text" : "password"}
+            placeholder={
+              field === "currentPassword"
+                ? "Current Password"
+                : field === "newPassword"
+                ? "New Password"
+                : "Confirm Password"
+            }
+            value={passwords[field]}
+            onChange={(e) => setPasswords((prev) => ({ ...prev, [field]: e.target.value }))}
+            className="w-full px-4 py-2 rounded-md bg-safecity-dark text-safecity-text"
+          />
+          <span
+            className="absolute right-3 top-2.5 cursor-pointer text-safecity-muted"
+            onClick={() =>
+              setShowPassword((prev) => ({
+                ...prev,
+                [field.split("Password")[0]]: !prev[field.split("Password")[0]],
+              }))
+            }
+          >
+            {showPassword[field.split("Password")[0]] ? <FiEyeOff /> : <FiEye />}
+          </span>
         </div>
-      </div>
-
-      <div className="bg-safecity-surface rounded-xl p-6">
-        <h3 className="text-lg font-semibold text-safecity-text mb-4">Support</h3>
-        <button className="flex items-center justify-between w-full py-3 border-b border-gray-600 text-safecity-text hover:text-safecity-accent transition-colors">
-          <div className="flex items-center space-x-3">
-            <FiHelpCircle className="text-safecity-muted" />
-            <span>Help & Support</span>
-          </div>
-          <FiChevronRight className="text-safecity-muted" />
-        </button>
-        <button className="flex items-center justify-between w-full py-3 border-b border-gray-600 text-safecity-text hover:text-safecity-accent transition-colors">
-          <div className="flex items-center space-x-3">
-            <FiShield className="text-safecity-muted" />
-            <span>Privacy Policy</span>
-          </div>
-          <FiChevronRight className="text-safecity-muted" />
-        </button>
-        <button className="flex items-center justify-between w-full py-3 text-red-400 hover:text-red-300 transition-colors">
-          <div className="flex items-center space-x-3">
-            <FiLogOut className="text-red-400" />
-            <span>Sign Out</span>
-          </div>
-          <FiChevronRight className="text-red-400" />
-        </button>
-      </div>
+      ))}
+      <button
+        onClick={handlePasswordChange}
+        disabled={loadingPassword}
+        className="bg-safecity-accent text-white px-6 py-2 rounded-md hover:opacity-90 transition"
+      >
+        {loadingPassword ? "Updating..." : "Change Password"}
+      </button>
     </div>
   );
 
-  const getNotificationDescription = (key) => {
-    const descriptions = {
-      emergencyAlerts: 'Immediate safety alerts in your area',
-      safetyUpdates: 'General safety news and updates',
-      communityReports: 'Reports from other SafeCity users',
-      locationBased: 'Alerts based on your current location'
-    };
-    return descriptions[key] || 'Notification setting';
-  };
-
-  const getPrivacyDescription = (key) => {
-    const descriptions = {
-      shareLocation: 'Share your location for better safety services',
-      showOnMap: 'Make your location visible to trusted contacts',
-      anonymousReporting: 'Submit reports without revealing identity',
-      dataCollection: 'Help improve SafeCity with anonymous data'
-    };
-    return descriptions[key] || 'Privacy setting';
-  };
-
   const renderActiveSection = () => {
     switch (activeSection) {
-      case 'general':
+      case "general":
         return renderGeneralSettings();
-      case 'notifications':
+      case "notifications":
         return renderNotificationSettings();
-      case 'privacy':
+      case "privacy":
         return renderPrivacySettings();
-      case 'location':
-        return renderLocationSettings();
-      case 'account':
+      case "account":
         return renderAccountSettings();
       default:
         return renderGeneralSettings();
@@ -329,17 +359,16 @@ const Settings = () => {
 
   return (
     <div className="min-h-screen bg-safecity-dark p-4 md:p-6">
-      {/* Header */}
       <div className="mb-8">
         <div className="flex items-center space-x-3 mb-2">
           <FiSettings className="text-2xl text-safecity-accent" />
-          <h1 className="text-3xl font-bold text-safecity-text">Settings</h1>
+          <h1 className="text-3xl font-bold text-safecity-text">{languages[lang].settings}</h1>
         </div>
         <p className="text-safecity-muted">Manage your SafeCity preferences and privacy</p>
       </div>
 
       <div className="flex flex-col lg:flex-row gap-6">
-        {/* Sidebar Navigation */}
+        {/* Sidebar */}
         <div className="lg:w-1/3">
           <div className="bg-safecity-surface rounded-xl p-4 sticky top-6">
             <div className="space-y-2">
@@ -349,8 +378,8 @@ const Settings = () => {
                   onClick={() => setActiveSection(section.id)}
                   className={`w-full flex items-center space-x-4 p-4 rounded-lg transition-colors ${
                     activeSection === section.id
-                      ? 'bg-safecity-accent text-white'
-                      : 'text-safecity-text hover:bg-gray-700'
+                      ? "bg-safecity-accent text-white"
+                      : "text-safecity-text hover:bg-gray-700"
                   }`}
                 >
                   {section.icon}
@@ -358,9 +387,7 @@ const Settings = () => {
                     <p className="font-medium">{section.title}</p>
                     <p className="text-sm opacity-80">{section.description}</p>
                   </div>
-                  <FiChevronRight className={`transition-transform ${
-                    activeSection === section.id ? 'rotate-90' : ''
-                  }`} />
+                  <FiChevronRight className={`transition-transform ${activeSection === section.id ? "rotate-90" : ""}`} />
                 </button>
               ))}
             </div>
@@ -368,17 +395,7 @@ const Settings = () => {
         </div>
 
         {/* Main Content */}
-        <div className="lg:w-2/3">
-          <div className="bg-safecity-surface rounded-xl p-6">
-            <h2 className="text-2xl font-bold text-safecity-text mb-2">
-              {sections.find(s => s.id === activeSection)?.title}
-            </h2>
-            <p className="text-safecity-muted mb-6">
-              {sections.find(s => s.id === activeSection)?.description}
-            </p>
-            {renderActiveSection()}
-          </div>
-        </div>
+        <div className="lg:w-2/3">{renderActiveSection()}</div>
       </div>
     </div>
   );
