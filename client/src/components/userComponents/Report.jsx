@@ -8,9 +8,9 @@ import { useSafeCity } from "../../context/SafeCity";
 import { toast } from "react-toastify";
 
 // import leaflet marker images
-import markerIcons2x from "leaflet/dist/images/marker-icon-2x.png";
-import markerIcon from "leaflet/dist/images/marker-icon.png";
-import markerShadow from "leaflet/dist/images/marker-shadow.png";
+import markerIcons2x from "leaflet/dist/images/marker-icon-2x.png"
+import markerIcon from "leaflet/dist/images/marker-icon.png"
+import markerShadow from "leaflet/dist/images/marker-shadow.png"
 
 // Fix for default markers in Leaflet with Webpack
 delete L.Icon.Default.prototype._getIconUrl;
