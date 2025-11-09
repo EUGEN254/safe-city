@@ -13,6 +13,10 @@ import { toast } from "react-toastify";
 import axios from "axios";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSafeCity } from "../context/SafeCity";
+import { io } from "socket.io-client";
+
+// socket instance
+let socket;
 
 const LoginSignUp = ({ showLogin, setShowLogin }) => {
   const navigate = useNavigate();
@@ -27,6 +31,14 @@ const LoginSignUp = ({ showLogin, setShowLogin }) => {
     password: "",
     confirmPassword: "",
   });
+
+  // Initialize socket when component mounts
+  useEffect(() => {
+    socket = io(backendUrl); // connect to backend socket.io
+    return () => {
+      socket.disconnect(); // clean up on unmount
+    };
+  }, []);
 
   useEffect(() => {
     setFormData({
@@ -70,11 +82,23 @@ const LoginSignUp = ({ showLogin, setShowLogin }) => {
 
       if (response.data.success) {
         toast.success(response.data.message);
+        let currentUser;
+
         if (response.data.user) {
           setUser(response.data.user);
+          currentUser = response.data.user;
         } else {
-          await fetchCurrentUser(); 
+          currentUser = await fetchCurrentUser(); 
         }
+
+        // Emit user-online event to server
+        if (socket && currentUser) {
+          socket.emit("user-online", {
+            id: currentUser._id,
+            name: currentUser.fullname,
+          });
+        }
+
         setShowLogin(false);
         navigate("/dashboard");
       }

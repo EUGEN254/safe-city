@@ -100,4 +100,36 @@ const logoutAdmin = async (req,res) => {
   }
   
 }
-export { loginadmin, getAdminData,logoutAdmin };
+
+
+const getAllUsers = async (req, res) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ 
+        success: false,
+        message: "Unauthorized"
+      });
+    }
+
+    // Fetch all users from database
+    const users = await User.find().select('-password'); // Exclude passwords
+
+    // Filter out admin users
+    const usersNotAdmin = users.filter(user => user.role !== 'admin');
+
+    res.status(200).json({
+      success: true,
+      message: "Users fetched successfully",
+      data: usersNotAdmin, 
+      count: usersNotAdmin.length
+    });
+
+  } catch (error) {
+    console.error("Failed to fetch users", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error"
+    });
+  }
+};
+export { loginadmin, getAdminData,logoutAdmin,getAllUsers };
