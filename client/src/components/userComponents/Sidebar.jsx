@@ -108,6 +108,7 @@ const Sidebar = ({ onLinkClick }) => {
                       : "text-safecity-text hover:text-white hover:bg-safecity-accent/60"
                   }`
                 }
+                
               >
                 <span className="w-5 h-5 flex items-center justify-center">
                   {link.icon}

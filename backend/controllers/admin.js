@@ -82,4 +82,22 @@ const getAdminData = async (req, res) => {
   }
 };
 
-export { loginadmin, getAdminData };
+
+const logoutAdmin = async (req,res) => {
+  try {
+    res.clearCookie("token")
+    res.status(200).json({
+      success:true,
+      message:"Logged out"
+    })
+  } catch (error) {
+    console.error("Logg Out Error",error)
+    res.status(500).json({
+      success:false,
+      message:"Server error"
+    })
+    
+  }
+  
+}
+export { loginadmin, getAdminData,logoutAdmin };

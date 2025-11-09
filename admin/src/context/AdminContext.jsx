@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState } from "react";
-import {toast} from 'react-toastify'
-import axios from "axios"
+import { toast } from "react-toastify";
+import axios from "axios";
+import { useNavigate } from "react-router-dom";
 
 export const AdminContext = createContext(null);
 
@@ -8,6 +9,8 @@ export const AdminContextProvider = ({ children }) => {
   const backendUrl = import.meta.env.VITE_BACKEND_URL;
   const [loading, setLoading] = useState(true);
   const [admin, setAdmin] = useState(null);
+  const [unreadCount, setUnreadCount] = useState(100);
+  const navigate = useNavigate();
 
   // fetch admin
   const fetchCurrentAdmin = async () => {
@@ -25,8 +28,27 @@ export const AdminContextProvider = ({ children }) => {
       toast.error(
         error?.response?.data?.message || error.message || "Failed to get admin"
       );
-    }finally{
+    } finally {
       setLoading(false);
+    }
+  };
+
+  // logout admin
+  const logout = async () => {
+    try {
+      const response = await axios.post(`${backendUrl}/api/admin/logout`, {
+        withCredentials: true,
+      });
+      if (response.data.success) {
+        toast.success(response.data.message);
+        navigate('/')
+      } else {
+        toast.error(response.data.message);
+      }
+    } catch (error) {
+      toast.error(
+        response?.data?.message || error.message || "Failed to logout"
+      );
     }
   };
 
@@ -40,6 +62,8 @@ export const AdminContextProvider = ({ children }) => {
     fetchCurrentAdmin,
     setAdmin,
     loading,
+    unreadCount,
+    logout,
     setLoading,
   };
 
