@@ -20,7 +20,7 @@ const Messages = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const messagesEndRef = useRef(null);
 
-  const { fetchedUsers, loading, onlineUsers, isUserOnline, onlineUsersCount } =
+  const { fetchedUsers, loading, isUserOnline, onlineUsersCount } =
     useAdmin();
   const users = fetchedUsers || [];
 

@@ -13,6 +13,7 @@ const userSchema = new mongoose.Schema(
       validate: [validator.isEmail, "invalid email"],
     },
     role: { type: String, default: "User" },
+    bio: { type: String, default: "" },
     password: { type: String, required: true },
   },
   {

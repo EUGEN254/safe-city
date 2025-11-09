@@ -2,7 +2,7 @@ import express from "express";
 import cors from "cors";
 import "dotenv/config";
 import cookieParser from "cookie-parser";
-import http from "http"; // <-- needed for socket.io
+import http from "http";
 import connectCloudinary from "./configs/cloudinary.js";
 import connectDB from "./configs/connectDB.js";
 import userRouter from "./routes/userRoutes.js";
@@ -60,38 +60,52 @@ const io = new Server(server, {
   },
 });
 
-// keep track of online users
-let onlineUsers = {}; // { userId: socketId }
+// keep track of online users 
+let onlineUsers = {}; // { userId: { socketId: string, role: 'user' | 'admin', name: string } }
 
 io.on("connection", (socket) => {
   console.log("A user connected:", socket.id);
 
-  // listen for user login
-  socket.on("user-online", (user) => {
-    onlineUsers[user.id] = socket.id;
+  // listen for user login - ENHANCED
+  socket.on("user-online", (userData) => {
+    onlineUsers[userData.id] = {
+      socketId: socket.id,
+      role: userData.role || 'user', // Default to 'user' if not specified
+      name: userData.name || 'Unknown'
+    };
+    
     io.emit("update-online-users", onlineUsers); // broadcast to all clients
+    console.log("User came online:", userData.name, "Role:", userData.role);
     console.log("Online users:", onlineUsers);
   });
 
-  // offline
+
+  // offline - ENHANCED
   socket.on("user-offline", (userId) => {
     console.log("User logging out:", userId);
     if (onlineUsers[userId]) {
+      console.log("Removing user from online users:", onlineUsers[userId].name);
       delete onlineUsers[userId];
       io.emit("update-online-users", onlineUsers);
-      console.log("User removed from online users:", userId);
     }
   });
 
   // handle disconnect
   socket.on("disconnect", () => {
-    for (let id in onlineUsers) {
-      if (onlineUsers[id] === socket.id) {
-        delete onlineUsers[id];
+    let disconnectedUser = null;
+    
+    // Find which user disconnected
+    for (let userId in onlineUsers) {
+      if (onlineUsers[userId].socketId === socket.id) {
+        disconnectedUser = onlineUsers[userId];
+        delete onlineUsers[userId];
+        break;
       }
     }
+    
+    
     io.emit("update-online-users", onlineUsers);
-    console.log("User disconnected:", socket.id);
+    console.log("Remaining online users:", onlineUsers);
   });
 });
 

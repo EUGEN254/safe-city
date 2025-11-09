@@ -1,42 +1,102 @@
-// addAdmin.js
+// scripts/addSupportTeam.js
 import mongoose from "mongoose";
 import bcrypt from "bcrypt";
 import "dotenv/config"; 
 import User from "../models/user.js"; 
 
-const createAdmin = async () => {
+const supportTeamMembers = [
+  {
+    fullname: "Admin Support",
+    email: "admin@safecity.com",
+    role: "admin",
+    password: "Admin@123",
+    bio: "General inquiries and safety support specialist"
+  },
+  {
+    fullname: "Dr. Sarah Johnson",
+    email: "doctor@safecity.com", 
+    role: "doctor",
+    password: "Doctor@123",
+    bio: "Medical doctor specializing in emergency response and healthcare"
+  },
+  {
+    fullname: "Officer Mike Wilson",
+    email: "police@safecity.com",
+    role: "police", 
+    password: "Police@123",
+    bio: "Police officer with 10+ years experience in community safety"
+  },
+  {
+    fullname: "Dr. James Chen",
+    email: "doctor2@safecity.com",
+    role: "doctor",
+    password: "Doctor@123",
+    bio: "Emergency medicine specialist and trauma care expert"
+  },
+  {
+    fullname: "Officer Lisa Garcia",
+    email: "police2@safecity.com", 
+    role: "police",
+    password: "Police@123",
+    bio: "Community policing specialist and safety educator"
+  }
+];
+
+const createSupportTeam = async () => {
   try {
-    // Connect to MongoDB using your env variable
-    await mongoose.connect(`${process.env.MONGODB_URI}/safe-city`, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
+    // Connect to MongoDB
+    await mongoose.connect('');
     console.log("✅ Connected to MongoDB");
 
-    // Check if admin already exists
-    const existingAdmin = await User.findOne({ email: "admin@safecity.com" });
-    if (existingAdmin) {
-      console.log("⚠️ Admin already exists:", existingAdmin.email);
-      return process.exit(0);
+    const results = {
+      created: [],
+      exists: []
+    };
+
+    // Create each team member
+    for (const member of supportTeamMembers) {
+      // Check if user already exists
+      const existingUser = await User.findOne({ email: member.email });
+      
+      if (existingUser) {
+        console.log(`⚠️ ${member.role} already exists: ${member.email}`);
+        results.exists.push({
+          email: member.email,
+          role: member.role,
+          name: member.fullname
+        });
+        continue;
+      }
+
+      // Hash password
+      const hashedPassword = await bcrypt.hash(member.password, 10);
+
+      // Create user
+      const user = await User.create({
+        fullname: member.fullname,
+        email: member.email,
+        role: member.role,
+        password: hashedPassword,
+        bio: member.bio
+      });
+
+      console.log(`✅ ${member.role} created: ${user.email}`);
+      results.created.push({
+        email: user.email,
+        role: user.role,
+        name: user.fullname
+      });
     }
 
-    // Hash password
-    const hashedPassword = await bcrypt.hash("Admin@123", 10);
-
-    // Create new admin
-    const admin = await User.create({
-      fullname: "Super Admin",
-      email: "admin@safecity.com",
-      role: "admin",
-      password: hashedPassword,
-    });
-
-    console.log("✅ Admin created successfully:", admin.email);
+    console.log("\n📊 Summary:");
+    console.log(`Created: ${results.created.length}`);
+    console.log(`Already existed: ${results.exists.length}`);
+    
     process.exit(0);
   } catch (error) {
-    console.error("❌ Error creating admin:", error);
+    console.error("❌ Error creating support team:", error);
     process.exit(1);
   }
 };
 
-createAdmin();
+createSupportTeam();

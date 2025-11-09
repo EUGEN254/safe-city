@@ -6,7 +6,7 @@ import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 
 const LoginSignUp = () => {
-  const { backendUrl, setAdmin, fetchCurrentAdmin } = useAdmin();
+  const { backendUrl, setAdmin,socket, fetchCurrentAdmin } = useAdmin();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -27,16 +27,29 @@ const LoginSignUp = () => {
       );
       if (response.data.success) {
         toast.success("Login Successful!");
+        let currentUser;
         // Set admin from login response
         if (response.data.admin) {
           setAdmin(response.data.admin);
+          currentUser = response.data.admin;
         } else {
           // fetch fresh admin data if not in response
-          await fetchCurrentAdmin();
+         currentUser = await fetchCurrentAdmin();
+         setAdmin(currentUser);
         }
         setEmail("");
         setPassword("");
         navigate("/dashboard");
+
+      
+       // Emit user-online event to server
+        if (socket && currentUser) {
+        socket.emit("user-online", {
+          id: currentUser._id,
+          name: currentUser.fullname,
+          role:currentUser.role,
+        });
+      }
       } else {
         toast.error(response.data.message || "Login failed");
       }

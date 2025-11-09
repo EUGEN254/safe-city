@@ -132,4 +132,6 @@ const getAllUsers = async (req, res) => {
     });
   }
 };
+
+
 export { loginadmin, getAdminData,logoutAdmin,getAllUsers };

@@ -3,7 +3,7 @@ import User from "../models/user.js";
 import generateToken from "../utils/generateToken.js";
 import { ACCOUNT_CREATION_TEMPLATE } from "./emailTemplates.js";
 import transporter from "../controllers/nodemailer.js";
-import {v2 as cloudinary} from 'cloudinary'
+import { v2 as cloudinary } from "cloudinary";
 
 // register user
 const registerUser = async (req, res) => {
@@ -138,7 +138,7 @@ const getUser = async (req, res) => {
         message: "Unauthorised",
       });
     }
-    const safeUser = req.user
+    const safeUser = req.user;
     res.json({ success: true, user: safeUser });
   } catch (error) {
     console.error("Error in getUser", error);
@@ -162,6 +162,58 @@ const logout = async (req, res) => {
   }
 };
 
+const getSupportTeam = async (req, res) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+    }
 
+    // Get ALL distinct roles from the database dynamically
+    const allRoles = await User.distinct("role", {
+      role: { $ne: null, $ne: "User" }, // Exclude null and regular "User" role
+    });
 
-export { registerUser, loginUser, getUser, logout };
+    // Step 2: Fetch all users that have roles (excluding regular users)
+    const users = await User.find({
+      role: { $ne: "User", $exists: true }, // Get all users who are NOT regular "User" role
+    })
+      .select("-password")
+      .lean();
+
+    // Step 3: Group users by role dynamically - no hardcoded roles!
+    const groupedUsers = {};
+
+    // Initialize all found roles with empty arrays
+    allRoles.forEach((role) => {
+      groupedUsers[role] = [];
+    });
+
+    // Group users by their roles
+    users.forEach((user) => {
+      if (groupedUsers[user.role]) {
+        groupedUsers[user.role].push(user);
+      } else {
+        // If we encounter a new role that wasn't in distinct (edge case)
+        groupedUsers[user.role] = [user];
+      }
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Support team fetched successfully",
+      data: groupedUsers,
+      roles: allRoles, // Also return the roles found for frontend reference
+    });
+  } catch (error) {
+    console.error("Error getting support team:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Server error while fetching support team",
+    });
+  }
+};
+
+export { registerUser, loginUser, getUser, logout, getSupportTeam };

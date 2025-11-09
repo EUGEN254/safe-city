@@ -12,72 +12,88 @@ export const AdminContextProvider = ({ children }) => {
   const [admin, setAdmin] = useState(null);
   const [fetchedUsers, setFetchedUsers] = useState([]);
   const [unreadCount, setUnreadCount] = useState(100);
-  const [onlineUsers, setOnlineUsers] = useState({}); 
-  const [socket, setSocket] = useState(null); 
+  const [onlineUsers, setOnlineUsers] = useState({});
+  const [socket, setSocket] = useState(null);
   const navigate = useNavigate();
 
-  // Initialize socket connection for admin panel
+  // Initialize socket connection ONLY when admin exists
   useEffect(() => {
-    const newSocket = io(backendUrl);
-    setSocket(newSocket);
+    if (admin) {
+      const newSocket = io(backendUrl);
+      setSocket(newSocket);
 
-    console.log("Admin socket initialized");
+      // Emit user-online when socket connects and user is available
+      newSocket.on("connect", () => {
+        newSocket.emit("user-online", {
+          id: admin._id,
+          name: admin.fullname,
+          role: admin.role || "admin",
+        });
+      });
 
-    // Listen for online users updates from server
-    newSocket.on("update-online-users", (users) => {
-      console.log("📊 Online users received:", users);
-      setOnlineUsers(users);
-    });
+      newSocket.on("update-online-users", (users) => {
+        setOnlineUsers(users);
+      });
 
-    // Handle connection events
-    newSocket.on("connect", () => {
-      console.log("✅ Admin socket connected:", newSocket.id);
-    });
+      return () => {
+        newSocket.disconnect();
+      };
+    } else {
+      // Clean up socket if admin logs out
+      if (socket) {
+        socket.disconnect();
+        setSocket(null);
+      }
+    }
+  }, [admin, backendUrl]);
 
-    newSocket.on("disconnect", () => {
-      console.log("❌ Admin socket disconnected");
-    });
-
-    newSocket.on("connect_error", (error) => {
-      console.error("🔴 Admin socket connection error:", error);
-    });
-
-    // Cleanup on unmount
-    return () => {
-      console.log("🛑Cleaning up admin socket");
-      newSocket.disconnect();
-    };
-  }, [backendUrl]);
-
-  // fetch admin
+  // Improved fetchCurrentAdmin
   const fetchCurrentAdmin = async () => {
-    setLoading(true);
     try {
       const response = await axios.get(`${backendUrl}/api/admin/get-admin`, {
         withCredentials: true,
       });
-      if (!response.data.success) {
-        throw new Error(response.data.message);
-      } else {
+
+      if (response.data.success && response.data.admin) {
         setAdmin(response.data.admin);
+        return response.data.admin;
+      } else {
+        setAdmin(null);
+        return null;
       }
     } catch (error) {
-      toast.error(
-        error?.response?.data?.message || error.message || "Failed to get admin"
-      );
-    } finally {
-      setLoading(false);
+      console.error("Error fetching admin:", error);
+      setAdmin(null);
+      return null;
     }
   };
 
-  // logout admin
+  // logout admin - FIXED setAdmin instead of setUser
   const logout = async () => {
     try {
-      const response = await axios.post(`${backendUrl}/api/admin/logout`, {
-        withCredentials: true,
-      });
+      const currentUser = admin;
+
+      // Emit user-offline event
+      if (socket && currentUser) {
+        socket.emit("user-offline", currentUser._id);
+        console.log("Emitted user-offline for:", currentUser._id);
+      }
+
+      const response = await axios.post(
+        `${backendUrl}/api/admin/logout`,
+        {},
+        { withCredentials: true }
+      );
+
       if (response.data.success) {
         toast.success(response.data.message);
+        setAdmin(null);
+
+        if (socket) {
+          socket.disconnect();
+          setSocket(null);
+        }
+
         navigate("/");
       } else {
         toast.error(response.data.message);
@@ -91,7 +107,6 @@ export const AdminContextProvider = ({ children }) => {
 
   const fetchUser = async () => {
     try {
-      setLoading(true); 
       const response = await axios.get(
         `${backendUrl}/api/admin/get-all-users`,
         { withCredentials: true }
@@ -105,43 +120,45 @@ export const AdminContextProvider = ({ children }) => {
       setFetchedUsers(response.data.data);
     } catch (error) {
       console.error("Error fetching users:", error);
-      toast.error(
-        error.response?.data?.message || error.message || "Failed to get users"
-      );
-    } finally {
-      setLoading(false); 
     }
   };
 
+  // Initial data fetch
   useEffect(() => {
-    fetchCurrentAdmin();
-    fetchUser();
+    const initializeAdmin = async () => {
+      setLoading(true);
+      await fetchCurrentAdmin();
+      await fetchUser();
+      setLoading(false);
+    };
+
+    initializeAdmin();
   }, []);
 
-  // Helper function to check if a user is online
   const isUserOnline = (userId) => {
     return onlineUsers.hasOwnProperty(userId);
   };
 
-  // Get online users count
-  const onlineUsersCount = Object.keys(onlineUsers).length;
+  const onlineUsersCount = Object.values(onlineUsers).filter(
+  (user) => user.role === "user"
+).length;
+
 
   const value = {
     backendUrl,
     admin,
     fetchCurrentAdmin,
     setAdmin,
-     fetchUser,
     loading,
     fetchedUsers,
     fetchUser,
     unreadCount,
     logout,
     setLoading,
-    onlineUsers, 
+    onlineUsers,
     isUserOnline,
-    onlineUsersCount, 
-    socket, 
+    onlineUsersCount,
+    socket,
   };
 
   return (
