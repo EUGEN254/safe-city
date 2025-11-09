@@ -4,43 +4,7 @@ import bcrypt from "bcrypt";
 import "dotenv/config"; 
 import User from "../models/user.js"; 
 
-const supportTeamMembers = [
-  {
-    fullname: "Admin Support",
-    email: "admin@safecity.com",
-    role: "admin",
-    password: "Admin@123",
-    bio: "General inquiries and safety support specialist"
-  },
-  {
-    fullname: "Dr. Sarah Johnson",
-    email: "doctor@safecity.com", 
-    role: "doctor",
-    password: "Doctor@123",
-    bio: "Medical doctor specializing in emergency response and healthcare"
-  },
-  {
-    fullname: "Officer Mike Wilson",
-    email: "police@safecity.com",
-    role: "police", 
-    password: "Police@123",
-    bio: "Police officer with 10+ years experience in community safety"
-  },
-  {
-    fullname: "Dr. James Chen",
-    email: "doctor2@safecity.com",
-    role: "doctor",
-    password: "Doctor@123",
-    bio: "Emergency medicine specialist and trauma care expert"
-  },
-  {
-    fullname: "Officer Lisa Garcia",
-    email: "police2@safecity.com", 
-    role: "police",
-    password: "Police@123",
-    bio: "Community policing specialist and safety educator"
-  }
-];
+
 
 const createSupportTeam = async () => {
   try {
