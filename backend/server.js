@@ -7,6 +7,7 @@ import connectDB from "./configs/connectDB.js";
 import userRouter from "./routes/userRoutes.js";
 import reportRouter from "./routes/reportRoutes.js";
 import settingsRouter from "./routes/settingRoutes.js";
+import adminRouter from "./routes/adminRoutes.js";
 
 // .......express setup.......
 const app = express();
@@ -40,6 +41,7 @@ app.get("/", (req, res) => {
 
 // Routes
 app.use("/api/user", userRouter);
+app.use("/api/admin", adminRouter);
 app.use("/api/reports", reportRouter);
 app.use("/api/settings", settingsRouter);
 
