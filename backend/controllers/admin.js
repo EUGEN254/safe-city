@@ -41,11 +41,12 @@ const loginadmin = async (req, res) => {
     // genrate token
     const token = generateToken(admin._id);
 
+
     // set cookie
     const cookieOptions = {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: process.env.NODE_ENV === "production " ? "None" : "Lax",
+      sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax",
       maxAge: 24 * 60 * 60 * 1000,
     };
 
@@ -82,56 +83,50 @@ const getAdminData = async (req, res) => {
   }
 };
 
-
-const logoutAdmin = async (req,res) => {
+const logoutAdmin = async (req, res) => {
   try {
-    res.clearCookie("token")
-    res.status(200).json({
-      success:true,
-      message:"Logged out"
-    })
-  } catch (error) {
-    console.error("Logg Out Error",error)
-    res.status(500).json({
-      success:false,
-      message:"Server error"
-    })
-    
-  }
-  
-}
-
-
-const getAllUsers = async (req, res) => {
-  try {
-    if (!req.user) {
-      return res.status(401).json({ 
-        success: false,
-        message: "Unauthorized"
-      });
-    }
-
-    // Fetch all users from database
-    const users = await User.find().select('-password'); // Exclude passwords
-
-    // Filter out admin users
-    const usersNotAdmin = users.filter(user => user.role !== 'admin');
-
+    res.clearCookie("token");
     res.status(200).json({
       success: true,
-      message: "Users fetched successfully",
-      data: usersNotAdmin, 
-      count: usersNotAdmin.length
+      message: "Logged out",
     });
-
   } catch (error) {
-    console.error("Failed to fetch users", error);
+    console.error("Logg Out Error", error);
     res.status(500).json({
       success: false,
-      message: "Server error"
+      message: "Server error",
     });
   }
 };
 
+const getAllUsers = async (req, res) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+    }
 
-export { loginadmin, getAdminData,logoutAdmin,getAllUsers };
+    // Fetch all users from database
+    const users = await User.find().select("-password"); // Exclude passwords
+
+    // Filter out admin users
+    const usersNotAdmin = users.filter((user) => user.role !== "admin");
+
+    res.status(200).json({
+      success: true,
+      message: "Users fetched successfully",
+      data: usersNotAdmin,
+      count: usersNotAdmin.length,
+    });
+  } catch (error) {
+    console.error("Failed to fetch users", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+    });
+  }
+};
+
+export { loginadmin, getAdminData, logoutAdmin, getAllUsers };
