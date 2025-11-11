@@ -1,8 +1,7 @@
 import Notification from "../models/notification.js";
 import Privacy from "../models/privacy.js";
 import User from "../models/user.js";
-import { notificationEnabledEmailTemplate } from "./emailTemplates.js";
-import transporter from "./nodemailer.js";
+import { notification } from "../utils/emailService.js";
 import bcrypt from "bcrypt";
 
 const enablenotification = async (req, res) => {
@@ -35,17 +34,7 @@ const enablenotification = async (req, res) => {
 
     // Send confirmation email only if enabling
     if (enabled) {
-      const htmlContent = notificationEnabledEmailTemplate(
-        fullname,
-        notificationType,
-        enabled
-      );
-      await transporter.sendMail({
-        from: process.env.SENDER_EMAIL,
-        to: email,
-        subject: `Notification Enabled: ${notificationType}`,
-        html: htmlContent,
-      });
+      await notification(fullname,email, notificationType, enabled);
     }
 
     res.status(200).json({

@@ -1,9 +1,8 @@
 import bcrypt from "bcrypt";
 import User from "../models/user.js";
 import generateToken from "../utils/generateToken.js";
-import { ACCOUNT_CREATION_TEMPLATE } from "./emailTemplates.js";
-import transporter from "../controllers/nodemailer.js";
 import { v2 as cloudinary } from "cloudinary";
+import { accountCreationEmail} from "../utils/emailService.js";
 
 // register user
 const registerUser = async (req, res) => {
@@ -41,12 +40,7 @@ const registerUser = async (req, res) => {
       sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax",
     });
 
-    await transporter.sendMail({
-      from: process.env.SENDER_EMAIL,
-      to: email,
-      subject: "ACCOUNT CREATION",
-      html: ACCOUNT_CREATION_TEMPLATE.replace(`{userName}`, fullname),
-    });
+    await accountCreationEmail(fullname,email)
 
     return res.status(201).json({
       success: true,

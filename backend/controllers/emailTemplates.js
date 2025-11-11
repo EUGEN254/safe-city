@@ -1,4 +1,4 @@
-export const ACCOUNT_CREATION_TEMPLATE = `
+export const ACCOUNT_CREATION_TEMPLATE = (fullname)=>`
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -62,7 +62,7 @@ export const ACCOUNT_CREATION_TEMPLATE = `
     </div>
 
     <div class="content">
-      <p>Hi <strong>{{userName}}</strong>,</p>
+      <p>Hi <strong>${fullname}</strong>,</p>
       <p>
         ✅ Your account has been successfully created!  
         We are excited to have you as part of our community dedicated to improving safety and quick response within our city.
