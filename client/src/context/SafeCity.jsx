@@ -6,44 +6,59 @@ import { io } from "socket.io-client";
 
 export const SafeCityContext = createContext(null);
 
-export const SafeCityContextProvider = (props) => {
+export const SafeCityContextProvider = ({ children }) => {
   const backendUrl = import.meta.env.VITE_BACKEND_URL;
-  const [unreadCount, setUnreadCount] = useState(4);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
   const [socket, setSocket] = useState(null);
   const [supportTeam, setSupportTeam] = useState([]);
-   const [onlineUsers, setOnlineUsers] = useState({});
-  const[roles,setRoles]= useState([])
+  const [roles, setRoles] = useState([]);
+  const [onlineUsers, setOnlineUsers] = useState({});
+  const [messagesMap, setMessagesMap] = useState({}); // { userId: [messages] }
+  const [unreadCount, setUnreadCount] = useState(0);
+
   const navigate = useNavigate();
 
-  // Initializing socket
+  /** --------------------- SOCKET.IO --------------------- **/
   useEffect(() => {
     if (user) {
-      const newSocket = io(backendUrl); //these is where socket id is created
+      const newSocket = io(backendUrl);
       setSocket(newSocket);
 
-      // Emit user-online when socket connects and user is available
+      // Emit user-online when connected
       newSocket.on("connect", () => {
         newSocket.emit("user-online", {
           id: user._id,
           name: user.fullname,
+          role: user.role || "user",
         });
       });
 
+      // Listen for updated online users
       newSocket.on("update-online-users", (users) => {
         setOnlineUsers(users);
       });
 
-      // Cleanup on unmount or when user changes
+      // Listen for incoming messages
+      newSocket.on("receive-message", ({ fromUserId, message }) => {
+        setMessagesMap((prev) => {
+          const userMessages = prev[fromUserId] || [];
+          return {
+            ...prev,
+            [fromUserId]: [...userMessages, message],
+          };
+        });
+      });
+
+      // Cleanup
       return () => {
         newSocket.disconnect();
-        setSocket(null)
+        setSocket(null);
       };
     }
   }, [user, backendUrl]);
 
-  // fetching user
+  /** --------------------- USER FETCH --------------------- **/
   const fetchCurrentUser = async () => {
     setLoading(true);
     try {
@@ -59,52 +74,38 @@ export const SafeCityContextProvider = (props) => {
         return null;
       }
     } catch (error) {
-      if (error.response?.status === 401) {
-        setUser(null);
-        return null;
-      } else {
-        console.error("Error fetching user:", error);
-      }
+      if (error.response?.status === 401) setUser(null);
+      console.error("Error fetching user:", error);
+      return null;
     } finally {
       setLoading(false);
     }
   };
 
-  // fetching support team
+  /** --------------------- SUPPORT TEAM FETCH --------------------- **/
   const fetchSupportTeam = async () => {
     try {
       const response = await axios.get(`${backendUrl}/api/user/get-support`, {
         withCredentials: true,
       });
 
-      if (!response.data.success) {
-        throw new Error(response.data.message);
-      }
+      if (!response.data.success) throw new Error(response.data.message);
 
-      // Set the support team data from the response
-      setSupportTeam(response.data.data);
-
-      // Optional: If you want to also store the roles separately
-      if (response.data.roles) {
-        setRoles(response.data.roles);
-      }
+      setSupportTeam(response.data.data || []);
+      if (response.data.roles) setRoles(response.data.roles);
     } catch (error) {
       console.error("Error fetching support team:", error);
     }
   };
 
-  // logout user
+  /** --------------------- LOGOUT --------------------- **/
   const logout = async () => {
     try {
-      const currentUser = user;
-
-      // Emit user-offline event BEFORE making logout request
-      if (socket && currentUser) {
-        socket.emit("user-offline", currentUser._id);
-        console.log("Emitted user-offline for:", currentUser._id);
+      if (socket && user) {
+        socket.emit("user-offline", user._id);
+        console.log("Emitted user-offline for:", user._id);
       }
 
-      // Make logout request
       const response = await axios.post(
         `${backendUrl}/api/user/logout`,
         {},
@@ -115,7 +116,6 @@ export const SafeCityContextProvider = (props) => {
         toast.success(response.data.message);
         setUser(null);
 
-        // Disconnect socket after logout
         if (socket) {
           socket.disconnect();
           setSocket(null);
@@ -132,36 +132,45 @@ export const SafeCityContextProvider = (props) => {
     }
   };
 
-  const addReport = () => {};
+  /** --------------------- ONLINE STATUS --------------------- **/
+  const isUserOnline = (userId) => onlineUsers.hasOwnProperty(userId);
 
-  const isUserOnline = (userId) => {
-    return onlineUsers.hasOwnProperty(userId);
+  const getLastSeen = (userId) => {
+    if (isUserOnline(userId)) return "Active now";
+    const u = onlineUsers[userId];
+    if (u?.lastSeen) return new Date(u.lastSeen).toLocaleString();
+    return "Offline";
   };
 
+  /** --------------------- INITIAL DATA --------------------- **/
   useEffect(() => {
     fetchCurrentUser();
     fetchSupportTeam();
   }, []);
 
+  /** --------------------- CONTEXT VALUE --------------------- **/
   const value = {
     backendUrl,
-    logout,
     user,
-    loading,
     setUser,
-    unreadCount,
+    loading,
+    logout,
     supportTeam,
-    isUserOnline,
-    addReport,
     roles,
-    fetchCurrentUser,
-    fetchSupportTeam ,
+    unreadCount,
+    messagesMap,
+    setMessagesMap,
     socket,
+    onlineUsers,
+    isUserOnline,
+    getLastSeen,
+    fetchCurrentUser,
+    fetchSupportTeam,
   };
 
   return (
     <SafeCityContext.Provider value={value}>
-      {props.children}
+      {children}
     </SafeCityContext.Provider>
   );
 };

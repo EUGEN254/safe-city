@@ -14,6 +14,7 @@ export const AdminContextProvider = ({ children }) => {
   const [unreadCount, setUnreadCount] = useState(100);
   const [onlineUsers, setOnlineUsers] = useState({});
   const [socket, setSocket] = useState(null);
+  const [messagesMap, setMessagesMap] = useState({}); // { userId: [messages] }
   const navigate = useNavigate();
 
   // Initialize socket connection ONLY when admin exists
@@ -22,7 +23,7 @@ export const AdminContextProvider = ({ children }) => {
       const newSocket = io(backendUrl);
       setSocket(newSocket);
 
-      // Emit user-online when socket connects and user is available
+      // Emit user-online when socket connects
       newSocket.on("connect", () => {
         newSocket.emit("user-online", {
           id: admin._id,
@@ -31,15 +32,23 @@ export const AdminContextProvider = ({ children }) => {
         });
       });
 
+      // Update online users
       newSocket.on("update-online-users", (users) => {
         setOnlineUsers(users);
+      });
+
+      // Listen for incoming messages
+      newSocket.on("receive-message", ({ fromUserId, message }) => {
+        setMessagesMap((prev) => {
+          const userMessages = prev[fromUserId] || [];
+          return { ...prev, [fromUserId]: [...userMessages, message] };
+        });
       });
 
       return () => {
         newSocket.disconnect();
       };
     } else {
-      // Clean up socket if admin logs out
       if (socket) {
         socket.disconnect();
         setSocket(null);
@@ -47,7 +56,7 @@ export const AdminContextProvider = ({ children }) => {
     }
   }, [admin, backendUrl]);
 
-  // Improved fetchCurrentAdmin
+  // Fetch current admin
   const fetchCurrentAdmin = async () => {
     try {
       const response = await axios.get(`${backendUrl}/api/admin/get-admin`, {
@@ -68,7 +77,7 @@ export const AdminContextProvider = ({ children }) => {
     }
   };
 
-  // logout admin - FIXED setAdmin instead of setUser
+  // Logout admin
   const logout = async () => {
     try {
       const currentUser = admin;
@@ -105,6 +114,7 @@ export const AdminContextProvider = ({ children }) => {
     }
   };
 
+  // Fetch all users
   const fetchUser = async () => {
     try {
       const response = await axios.get(
@@ -135,14 +145,55 @@ export const AdminContextProvider = ({ children }) => {
     initializeAdmin();
   }, []);
 
-  const isUserOnline = (userId) => {
-    return onlineUsers.hasOwnProperty(userId);
-  };
+  // Check if user is online
+  const isUserOnline = (userId) => onlineUsers.hasOwnProperty(userId);
 
+  // Count online users (role === "user")
   const onlineUsersCount = Object.values(onlineUsers).filter(
-  (user) => user.role === "user"
-).length;
+    (user) => user.role === "user"
+  ).length;
 
+  // Send message via socket
+  const sendMessage = async (receiverId, text, file = null) => {
+    if (!socket || !admin) return;
+    if (!text?.trim() && !file) return; // nothing to send
+
+    const formData = new FormData();
+    formData.append("senderId", admin._id);
+    formData.append("receiverId", receiverId);
+    formData.append("text", text);
+    if (file) formData.append("image", file);
+
+    try {
+      const res = await axios.post(
+        `${backendUrl}/api/messages/send`,
+        formData,
+        {
+          withCredentials: true,
+          headers: { "Content-Type": "multipart/form-data" },
+        }
+      );
+
+      if (res.data.success) {
+        const msg = res.data.data;
+
+        // Emit via socket
+        socket.emit("send-message", {
+          toUserId: receiverId,
+          message: msg,
+        });
+
+        // Update local messages state
+        setMessagesMap((prev) => {
+          const userMessages = prev[receiverId] || [];
+          return { ...prev, [receiverId]: [...userMessages, msg] };
+        });
+      }
+    } catch (error) {
+      console.error("Failed to send message:", error);
+      toast.error("Failed to send message");
+    }
+  };
 
   const value = {
     backendUrl,
@@ -159,6 +210,8 @@ export const AdminContextProvider = ({ children }) => {
     isUserOnline,
     onlineUsersCount,
     socket,
+    messagesMap,
+    sendMessage,
   };
 
   return (

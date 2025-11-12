@@ -9,105 +9,116 @@ import userRouter from "./routes/userRoutes.js";
 import reportRouter from "./routes/reportRoutes.js";
 import settingsRouter from "./routes/settingRoutes.js";
 import adminRouter from "./routes/adminRoutes.js";
+import messageRouter from "./routes/messageRoutes.js";
 import { Server } from "socket.io";
 
-// .......express setup.......
+/** ------------------- EXPRESS SETUP ------------------- **/
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// ...middleware.....
+// Cloudinary setup
 connectCloudinary();
 
-// Determine the environment
+// Determine environment and allowed origins
 const isProduction = (process.env.NODE_ENV || "development") === "production";
 const allowedOrigins = (
   isProduction ? process.env.PROD_ORIGINS : process.env.DEV_ORIGINS
 )?.split(",");
 
-app.use(express.json({ limit: "4mb" }));
+// Middleware
+app.use(express.json({ limit: "10mb" })); // Increased limit for images
 app.use(cookieParser());
-app.use(
-  cors({
-    origin: allowedOrigins,
-    credentials: true,
-  })
-);
+app.use(cors({ origin: allowedOrigins, credentials: true }));
 
-// test route
+// Test route
 app.get("/", (req, res) => {
-  res.send(
-    `🚀 Server is running in ${process.env.NODE_ENV} - ready to receive request`
-  );
+  res.send(`🚀 Server running in ${process.env.NODE_ENV}`);
 });
 
-// Routes
+// REST API routes
 app.use("/api/user", userRouter);
 app.use("/api/admin", adminRouter);
 app.use("/api/reports", reportRouter);
 app.use("/api/settings", settingsRouter);
+app.use("/api/messages", messageRouter);
 
-// connect MongoDb
+// Connect MongoDB
 await connectDB();
 
-// create http server for socket.io
+/** ------------------- HTTP & SOCKET.IO SETUP ------------------- **/
 const server = http.createServer(app);
-
-// initialize socket.io
 const io = new Server(server, {
-  cors: {
-    origin: allowedOrigins,
-    credentials: true,
-  },
+  cors: { origin: allowedOrigins, credentials: true },
 });
 
-// keep track of online users 
-let onlineUsers = {}; // { userId: { socketId: string, role: 'user' | 'admin', name: string } }
+// Keep track of online users
+let onlineUsers = {}; // { userId: { socketId, name, role } }
 
 io.on("connection", (socket) => {
-  console.log("A user connected:", socket.id);
+  console.log("User connected:", socket.id);
 
-  // listen for user login - ENHANCED
+  /** ----- USER ONLINE ----- **/
   socket.on("user-online", (userData) => {
     onlineUsers[userData.id] = {
       socketId: socket.id,
-      role: userData.role || 'user', // Default to 'user' if not specified
-      name: userData.name || 'Unknown'
+      name: userData.name || "Unknown",
+      role: userData.role || "user",
     };
-    
-    io.emit("update-online-users", onlineUsers); // broadcast to all clients
-    console.log("User came online:", userData.name, "Role:", userData.role);
-    console.log("Online users:", onlineUsers);
+    io.emit("update-online-users", onlineUsers);
+    console.log("User online:", userData.name, onlineUsers);
   });
 
-
-  // offline - ENHANCED
+  /** ----- USER OFFLINE ----- **/
   socket.on("user-offline", (userId) => {
-    console.log("User logging out:", userId);
     if (onlineUsers[userId]) {
-      console.log("Removing user from online users:", onlineUsers[userId].name);
       delete onlineUsers[userId];
       io.emit("update-online-users", onlineUsers);
     }
   });
 
-  // handle disconnect
+  /** ----- SEND MESSAGE ----- **/
+  socket.on("send-message", async ({ toUserId, message }) => {
+    try {
+      // Emit message to receiver if online
+      const receiver = onlineUsers[toUserId];
+      if (receiver?.socketId) {
+        io.to(receiver.socketId).emit("receive-message", {
+          fromUserId: message.senderId,
+          message,
+        });
+      }
+
+      // Always emit back to sender to confirm
+      socket.emit("receive-message", {
+        fromUserId: message.senderId,
+        message,
+      });
+    } catch (err) {
+      console.error("Error sending message:", err);
+    }
+  });
+
+  /** ----- DISCONNECT ----- **/
   socket.on("disconnect", () => {
-    let disconnectedUser = null;
-    
-    // Find which user disconnected
-    for (let userId in onlineUsers) {
+    let disconnectedUserId = null;
+
+    for (const userId in onlineUsers) {
       if (onlineUsers[userId].socketId === socket.id) {
-        disconnectedUser = onlineUsers[userId];
+        disconnectedUserId = userId;
         delete onlineUsers[userId];
         break;
       }
     }
-    
-    
-    io.emit("update-online-users", onlineUsers);
-    console.log("Remaining online users:", onlineUsers);
+
+    if (disconnectedUserId) io.emit("update-online-users", onlineUsers);
+    console.log(
+      "User disconnected:",
+      socket.id,
+      "Online users left:",
+      onlineUsers
+    );
   });
 });
 
-// start server
-server.listen(PORT, () => console.log(`Server started on PORT : ${PORT}`));
+/** ------------------- START SERVER ------------------- **/
+server.listen(PORT, () => console.log(`Server running on PORT ${PORT}`));
