@@ -26,7 +26,7 @@ const allowedOrigins = (
 )?.split(",");
 
 // Middleware
-app.use(express.json({ limit: "10mb" })); // Increased limit for images
+app.use(express.json({ limit: "10mb" }));
 app.use(cookieParser());
 app.use(cors({ origin: allowedOrigins, credentials: true }));
 
@@ -55,8 +55,6 @@ const io = new Server(server, {
 let onlineUsers = {}; // { userId: { socketId, name, role } }
 
 io.on("connection", (socket) => {
-  console.log("User connected:", socket.id);
-
   /** ----- USER ONLINE ----- **/
   socket.on("user-online", (userData) => {
     onlineUsers[userData.id] = {
@@ -65,7 +63,6 @@ io.on("connection", (socket) => {
       role: userData.role || "user",
     };
     io.emit("update-online-users", onlineUsers);
-    console.log("User online:", userData.name, onlineUsers);
   });
 
   /** ----- USER OFFLINE ----- **/
@@ -87,12 +84,6 @@ io.on("connection", (socket) => {
           message,
         });
       }
-
-      // Always emit back to sender to confirm
-      socket.emit("receive-message", {
-        fromUserId: message.senderId,
-        message,
-      });
     } catch (err) {
       console.error("Error sending message:", err);
     }
@@ -111,12 +102,6 @@ io.on("connection", (socket) => {
     }
 
     if (disconnectedUserId) io.emit("update-online-users", onlineUsers);
-    console.log(
-      "User disconnected:",
-      socket.id,
-      "Online users left:",
-      onlineUsers
-    );
   });
 });
 

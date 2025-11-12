@@ -11,10 +11,9 @@ export const SafeCityContextProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
   const [socket, setSocket] = useState(null);
-  const [supportTeam, setSupportTeam] = useState([]);
-  const [roles, setRoles] = useState([]);
+  const [supportTeam, setSupportTeam] = useState({});
   const [onlineUsers, setOnlineUsers] = useState({});
-  const [messagesMap, setMessagesMap] = useState({}); // { userId: [messages] }
+  const [messagesMap, setMessagesMap] = useState({}); 
   const [unreadCount, setUnreadCount] = useState(0);
 
   const navigate = useNavigate();
@@ -92,7 +91,6 @@ export const SafeCityContextProvider = ({ children }) => {
       if (!response.data.success) throw new Error(response.data.message);
 
       setSupportTeam(response.data.data || []);
-      if (response.data.roles) setRoles(response.data.roles);
     } catch (error) {
       console.error("Error fetching support team:", error);
     }
@@ -156,7 +154,6 @@ export const SafeCityContextProvider = ({ children }) => {
     loading,
     logout,
     supportTeam,
-    roles,
     unreadCount,
     messagesMap,
     setMessagesMap,

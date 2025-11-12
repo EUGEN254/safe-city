@@ -195,11 +195,11 @@ const getSupportTeam = async (req, res) => {
       }
     });
 
+
     return res.status(200).json({
       success: true,
       message: "Support team fetched successfully",
       data: groupedUsers,
-      roles: allRoles, // Also return the roles found for frontend reference
     });
   } catch (error) {
     console.error("Error getting support team:", error);

@@ -69,7 +69,7 @@ const Navbar = ({ onMenuToggle }) => {
   };
 
   return (
-    <div className="w-full bg-safecity-surface border-b border-gray-700 shadow-lg mt-2 rounded-2xl">
+    <div className="w-full bg-safecity-surface border-b border-gray-700 shadow-lg mt-3 rounded-2xl">
       <div className="flex items-center justify-between p-4">
         {/* Left side - Menu & Profile */}
         <div className="flex items-center gap-4">

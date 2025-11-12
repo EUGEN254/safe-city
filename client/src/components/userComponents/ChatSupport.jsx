@@ -27,7 +27,6 @@ const ChatSupport = () => {
 
   const {
     supportTeam,
-    roles,
     user,
     fetchSupportTeam,
     backendUrl,
@@ -36,6 +35,9 @@ const ChatSupport = () => {
     messagesMap,
     setMessagesMap,
   } = useSafeCity();
+
+  // Extract roles from supportTeam
+  const roles = Object.keys(supportTeam || {});
 
   // Fetch support team
   useEffect(() => {
@@ -132,7 +134,7 @@ const ChatSupport = () => {
       ? supportTeam[selectedRole].filter(
           (u) =>
             u.fullname.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            u.bio.toLowerCase().includes(searchTerm.toLowerCase())
+            (u.bio && u.bio.toLowerCase().includes(searchTerm.toLowerCase()))
         )
       : [];
 
@@ -160,9 +162,11 @@ const ChatSupport = () => {
         bgColor: "bg-green-50 dark:bg-green-900/20",
       },
     };
+
+    // Return configured role or default for new roles
     return roleConfig[role] || {
-      name: `${role} Support`,
-      description: "Professional support.",
+      name: `${role.charAt(0).toUpperCase() + role.slice(1)} Support`,
+      description: "Professional support and assistance.",
       icon: <FiHelpCircle size={22} />,
       color: "text-purple-600 dark:text-purple-400",
       bgColor: "bg-purple-50 dark:bg-purple-900/20",
@@ -170,8 +174,12 @@ const ChatSupport = () => {
   };
 
   const getRoleDisplayName = (role) => {
-    const roleNames = { admin: "Admins", doctor: "Doctors", police: "Officers" };
-    return roleNames[role] || `${role}s`;
+    const roleNames = { 
+      admin: "Admins", 
+      doctor: "Doctors", 
+      police: "Officers" 
+    };
+    return roleNames[role] || `${role.charAt(0).toUpperCase() + role.slice(1)}s`;
   };
 
   const getOnlineStatus = (userId) => {
@@ -195,7 +203,7 @@ const ChatSupport = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
+    <div className="min-h-screen bg-inherit">
       {/* Mobile Header */}
       <div className="lg:hidden bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-4 flex items-center justify-between">
         <button
@@ -310,7 +318,7 @@ const ChatSupport = () => {
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="font-medium text-gray-800 dark:text-gray-100 truncate">{u.fullname}</p>
-                          <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{u.bio}</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{u.bio || "No bio available"}</p>
                           <p className={`text-xs ${status.color}`}>{status.text}</p>
                         </div>
                       </div>
@@ -343,9 +351,13 @@ const ChatSupport = () => {
                   <div className={`absolute bottom-2 right-2 w-4 h-4 rounded-full border-2 border-white dark:border-gray-800 ${getOnlineStatus(activeUser._id).dotColor}`} />
                 </div>
                 <h3 className="font-semibold text-gray-800 dark:text-gray-100 text-lg">{activeUser.fullname}</h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{activeUser.bio}</p>
-                <p className="text-xs text-blue-600 dark:text-blue-300 mt-2 px-3 py-1 bg-blue-50 dark:bg-blue-900/20 rounded-full">{activeUser.role}</p>
-                <p className={`text-sm mt-2 ${getOnlineStatus(activeUser._id).color}`}>{getOnlineStatus(activeUser._id).text}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{activeUser.bio || "No bio available"}</p>
+                <p className="text-xs text-blue-600 dark:text-blue-300 mt-2 px-3 py-1 bg-blue-50 dark:bg-blue-900/20 rounded-full">
+                  {activeUser.role}
+                </p>
+                <p className={`text-sm mt-2 ${getOnlineStatus(activeUser._id).color}`}>
+                  {getOnlineStatus(activeUser._id).text}
+                </p>
               </div>
             </div>
           </div>
@@ -375,7 +387,9 @@ const ChatSupport = () => {
                         <h3 className="font-semibold text-gray-800 dark:text-gray-100">{roleInfo.name}</h3>
                         <p className="text-sm text-gray-500 dark:text-gray-300 mt-1">{roleInfo.description}</p>
                         <div className="flex justify-between items-center mt-2">
-                          <p className="text-xs text-gray-400 dark:text-gray-500">{roleUsers.length} available</p>
+                          <p className="text-xs text-gray-400 dark:text-gray-500">
+                            {roleUsers.length} {roleUsers.length === 1 ? 'member' : 'members'}
+                          </p>
                           {onlineCount > 0 && (
                             <p className="text-xs text-green-500 font-medium">{onlineCount} online</p>
                           )}
@@ -442,7 +456,7 @@ const ChatSupport = () => {
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="font-semibold text-gray-800 text-sm dark:text-gray-100 truncate">{u.fullname}</p>
-                          <p className="text-sm text-gray-500 dark:text-gray-400 truncate mt-1">{u.bio}</p>
+                          <p className="text-sm text-gray-500 dark:text-gray-400 truncate mt-1">{u.bio || "No bio available"}</p>
                           <p className={`text-xs font-medium mt-1 ${status.color}`}>{status.text}</p>
                         </div>
                       </div>
@@ -479,7 +493,7 @@ const ChatSupport = () => {
                     </div>
                   </div>
 
-                  <div className="flex-1  overflow-y-auto p-3 space-y-4 no-scrollbar">
+                  <div className="flex-1 overflow-y-auto p-3 space-y-4 no-scrollbar">
                     {(messagesMap[activeUser._id] || []).map((msg) => (
                       <div key={msg._id} ref={scrollRef} className={`flex ${msg.senderId === activeUser._id ? "justify-start" : "justify-end"}`}>
                         <div className={`max-w-xs lg:max-w-md px-4 py-3 rounded-2xl ${
@@ -497,7 +511,7 @@ const ChatSupport = () => {
                     ))}
                   </div>
 
-                  <div className="p-2  border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+                  <div className="p-2 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
                     <div className="flex items-center gap-2">
                       {file && (
                         <div className="flex items-center gap-2 bg-blue-50 dark:bg-blue-900/20 px-3 py-2 rounded-lg">
@@ -519,7 +533,7 @@ const ChatSupport = () => {
                         value={message}
                         onChange={(e) => setMessage(e.target.value)}
                         onKeyPress={handleKeyPress}
-                        className="flex-1 w-5 px-4 py-1 rounded-xl bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 outline-none transition-all focus:ring-2 focus:ring-blue-500"
+                        className="flex-1 px-4 py-3 rounded-xl bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 outline-none transition-all focus:ring-2 focus:ring-blue-500"
                       />
                       <input
                         type="file"
@@ -568,8 +582,8 @@ const ChatSupport = () => {
                     />
                     <div className={`absolute bottom-2 right-2 w-4 h-4 rounded-full border-2 border-white dark:border-gray-800 ${getOnlineStatus(activeUser._id).dotColor}`} />
                   </div>
-                  <h3 className="font-semibold text-gray-800 dark:text-gray-100 text-sm">{activeUser.fullname}</h3>
-                  <p className="text-gray-500 dark:text-gray-400 mb-4 leading-relaxed">{activeUser.bio}</p>
+                  <h3 className="font-semibold text-gray-800 dark:text-gray-100 text-lg">{activeUser.fullname}</h3>
+                  <p className="text-gray-500 dark:text-gray-400 mb-4 leading-relaxed">{activeUser.bio || "No bio available"}</p>
                   <p className={`text-sm font-medium ${getOnlineStatus(activeUser._id).color}`}>
                     {getOnlineStatus(activeUser._id).text}
                   </p>

@@ -12,6 +12,7 @@ import {
   FiInfo,
 } from "react-icons/fi";
 import { useAdmin } from "../context/AdminContext";
+import axios from "axios";
 
 const Messages = () => {
   const [selectedUser, setSelectedUser] = useState(null);
@@ -30,9 +31,41 @@ const Messages = () => {
     sendMessage,
     messagesMap,
     admin,
+    fetchUser,
+    setMessagesMap,
+    backendUrl,
   } = useAdmin();
 
   const users = fetchedUsers || [];
+  useEffect(() => {
+    fetchUser();
+  }, []);
+
+  // Fetch messages when activeUser changes
+  useEffect(() => {
+    const fetchMessages = async () => {
+      if (!selectedUser || !admin) return;
+
+      try {
+        const res = await axios.get(
+          `${backendUrl}/api/messages/${admin._id}/${selectedUser.id}`,
+          { withCredentials: true }
+        );
+
+        if (res.data.success) {
+          // Update messagesMap with the fetched messages
+          setMessagesMap((prev) => ({
+            ...prev,
+            [selectedUser.id]: res.data.data,
+          }));
+        }
+      } catch (error) {
+        console.error("Failed to fetch messages:", error);
+      }
+    };
+
+    fetchMessages();
+  }, [selectedUser, admin, backendUrl]);
 
   // Auto-scroll to bottom
   const scrollToBottom = () => {
@@ -85,7 +118,7 @@ const Messages = () => {
   }));
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
+    <div className="min-h-screen ">
       {/* Mobile Header */}
       <div className="lg:hidden bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-4 flex items-center justify-between">
         <button
@@ -94,7 +127,7 @@ const Messages = () => {
         >
           <FiMenu size={20} />
         </button>
-        
+
         <div className="flex items-center gap-2">
           <h1 className="text-lg font-semibold text-gray-800 dark:text-white">
             Messages
@@ -219,7 +252,9 @@ const Messages = () => {
         <div className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-50">
           <div className="absolute right-0 top-0 h-full w-80 bg-white dark:bg-gray-800 shadow-2xl">
             <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-              <h3 className="font-semibold text-gray-800 dark:text-white">User Info</h3>
+              <h3 className="font-semibold text-gray-800 dark:text-white">
+                User Info
+              </h3>
               <button
                 onClick={() => setIsProfileOpen(false)}
                 className="p-2 rounded-xl bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
@@ -242,10 +277,16 @@ const Messages = () => {
                 <h3 className="font-semibold text-gray-800 dark:text-gray-100 text-xl mb-2">
                   {selectedUser.name}
                 </h3>
-                <p className="text-gray-500 dark:text-gray-400 mb-4">{selectedUser.email}</p>
-                
+                <p className="text-gray-500 dark:text-gray-400 mb-4">
+                  {selectedUser.email}
+                </p>
+
                 <div className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-700 rounded-full">
-                  <div className={`w-2 h-2 rounded-full ${selectedUser.online ? "bg-green-500" : "bg-red-500"}`} />
+                  <div
+                    className={`w-2 h-2 rounded-full ${
+                      selectedUser.online ? "bg-green-500" : "bg-red-500"
+                    }`}
+                  />
                   <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
                     {selectedUser.online ? "Online" : "Offline"}
                   </span>
@@ -258,17 +299,27 @@ const Messages = () => {
                 </h4>
                 <div className="space-y-4 text-sm">
                   <div>
-                    <p className="text-gray-500 dark:text-gray-400 text-xs mb-2">User ID</p>
+                    <p className="text-gray-500 dark:text-gray-400 text-xs mb-2">
+                      User ID
+                    </p>
                     <p className="text-gray-800 dark:text-gray-200 font-mono text-xs break-all bg-gray-100 dark:bg-gray-700 p-3 rounded-xl">
                       {selectedUser.id}
                     </p>
                   </div>
                   <div>
-                    <p className="text-gray-500 dark:text-gray-400 text-xs mb-2">Status</p>
+                    <p className="text-gray-500 dark:text-gray-400 text-xs mb-2">
+                      Status
+                    </p>
                     <div className="flex items-center gap-3 p-3 bg-gray-100 dark:bg-gray-700 rounded-xl">
-                      <div className={`w-3 h-3 rounded-full ${selectedUser.online ? "bg-green-500" : "bg-red-500"}`} />
+                      <div
+                        className={`w-3 h-3 rounded-full ${
+                          selectedUser.online ? "bg-green-500" : "bg-red-500"
+                        }`}
+                      />
                       <span className="text-gray-800 dark:text-gray-200 font-medium">
-                        {selectedUser.online ? "Active now" : "Last seen recently"}
+                        {selectedUser.online
+                          ? "Active now"
+                          : "Last seen recently"}
                       </span>
                     </div>
                   </div>
@@ -284,7 +335,7 @@ const Messages = () => {
           {/* Users Sidebar - Hidden on mobile */}
           <div className="hidden lg:flex w-full md:w-1/4 lg:w-1/4 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 p-6 flex flex-col">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100">
+              <h2 className="text-sm font-bold text-gray-800 dark:text-gray-100">
                 Users
               </h2>
               <div className="flex items-center gap-2 bg-green-100 dark:bg-green-900 px-3 py-2 rounded-full">
@@ -368,7 +419,11 @@ const Messages = () => {
                       >
                         {user.email}
                       </p>
-                      <p className={`text-xs font-medium mt-1 ${user.online ? "text-green-500" : "text-red-500"}`}>
+                      <p
+                        className={`text-xs font-medium mt-1 ${
+                          user.online ? "text-green-500" : "text-red-500"
+                        }`}
+                      >
                         {user.online ? "Online" : "Offline"}
                       </p>
                     </div>
@@ -399,7 +454,13 @@ const Messages = () => {
                       <p className="font-semibold text-gray-800 dark:text-gray-100">
                         {selectedUser.name}
                       </p>
-                      <p className={`text-sm font-medium ${selectedUser.online ? "text-green-500" : "text-red-500"}`}>
+                      <p
+                        className={`text-sm font-medium ${
+                          selectedUser.online
+                            ? "text-green-500"
+                            : "text-red-500"
+                        }`}
+                      >
                         {selectedUser.online ? "Online" : "Offline"}
                       </p>
                     </div>
@@ -415,7 +476,8 @@ const Messages = () => {
                         No messages yet
                       </p>
                       <p className="text-sm text-center text-gray-600 dark:text-gray-400 max-w-md">
-                        Start a conversation with {selectedUser.name}. Send a message to begin chatting.
+                        Start a conversation with {selectedUser.name}. Send a
+                        message to begin chatting.
                       </p>
                     </div>
                   ) : (
@@ -423,7 +485,9 @@ const Messages = () => {
                       <div
                         key={msg._id || msg.id}
                         className={`flex ${
-                          msg.senderId === admin?._id ? "justify-end" : "justify-start"
+                          msg.senderId === admin?._id
+                            ? "justify-end"
+                            : "justify-start"
                         }`}
                       >
                         <div
@@ -441,7 +505,9 @@ const Messages = () => {
                                 : "text-gray-500 dark:text-gray-400"
                             } text-right text-xs`}
                           >
-                            {new Date(msg.createdAt || msg.timestamp).toLocaleTimeString([], {
+                            {new Date(
+                              msg.createdAt || msg.timestamp
+                            ).toLocaleTimeString([], {
                               hour: "2-digit",
                               minute: "2-digit",
                             })}
@@ -469,7 +535,7 @@ const Messages = () => {
                       </button>
                     </div>
                   )}
-                  
+
                   <div className="flex items-center gap-3">
                     <input
                       type="text"
@@ -479,7 +545,7 @@ const Messages = () => {
                       onKeyPress={handleKeyPress}
                       className="flex-1 w-5 px-4 py-3 rounded-xl bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 outline-none placeholder-gray-500 dark:placeholder-gray-400 border-0 focus:ring-2 focus:ring-blue-500 transition-all"
                     />
-                    
+
                     <input
                       type="file"
                       id="file-input"
@@ -493,7 +559,7 @@ const Messages = () => {
                     >
                       <FiImage size={20} />
                     </label>
-                    
+
                     <button
                       onClick={handleSend}
                       disabled={!newMessage.trim() && !file}
@@ -513,8 +579,8 @@ const Messages = () => {
                     Welcome to Messages
                   </h3>
                   <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
-                    Select a user from the sidebar to start chatting. 
-                    You can see online users and their availability status.
+                    Select a user from the sidebar to start chatting. You can
+                    see online users and their availability status.
                   </p>
                 </div>
               </div>
@@ -543,7 +609,11 @@ const Messages = () => {
                     {selectedUser.email}
                   </p>
                   <div className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-700 rounded-full">
-                    <div className={`w-2 h-2 rounded-full ${selectedUser.online ? "bg-green-500" : "bg-red-500"}`} />
+                    <div
+                      className={`w-2 h-2 rounded-full ${
+                        selectedUser.online ? "bg-green-500" : "bg-red-500"
+                      }`}
+                    />
                     <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
                       {selectedUser.online ? "Online" : "Offline"}
                     </span>
@@ -576,9 +646,15 @@ const Messages = () => {
                         STATUS
                       </p>
                       <div className="flex items-center gap-3 p-3 bg-gray-100 dark:bg-gray-700 rounded-xl">
-                        <div className={`w-3 h-3 rounded-full ${selectedUser.online ? "bg-green-500" : "bg-red-500"}`} />
+                        <div
+                          className={`w-3 h-3 rounded-full ${
+                            selectedUser.online ? "bg-green-500" : "bg-red-500"
+                          }`}
+                        />
                         <span className="text-gray-800 dark:text-gray-200 font-medium text-sm">
-                          {selectedUser.online ? "Active now" : "Last seen recently"}
+                          {selectedUser.online
+                            ? "Active now"
+                            : "Last seen recently"}
                         </span>
                       </div>
                     </div>

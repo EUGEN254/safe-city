@@ -48,7 +48,7 @@ const Sidebar = ({ onLinkClick }) => {
   };
 
   return (
-    <aside className="w-64 h-full shadow-md rounded-2xl m-0 md:m-2 flex flex-col p-4 bg-safecity-surface">
+    <aside className="w-64 h-full shadow-md rounded-2xl m-0 md:m-3 flex flex-col p-4 bg-safecity-surface">
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-center gap-3">
           <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-safecity-accent">

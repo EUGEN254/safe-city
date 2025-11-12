@@ -138,7 +138,7 @@ export const AdminContextProvider = ({ children }) => {
     const initializeAdmin = async () => {
       setLoading(true);
       await fetchCurrentAdmin();
-      await fetchUser();
+      await fetchUser()
       setLoading(false);
     };
 
@@ -177,23 +177,28 @@ export const AdminContextProvider = ({ children }) => {
       if (res.data.success) {
         const msg = res.data.data;
 
+        // Update local messages state
+        setMessagesMap((prev) => {
+          const userMessages = prev[receiverId] || [];
+          return { ...prev, [receiverId]: [...userMessages, msg] };
+        });
+
         // Emit via socket
         socket.emit("send-message", {
           toUserId: receiverId,
           message: msg,
         });
 
-        // Update local messages state
-        setMessagesMap((prev) => {
-          const userMessages = prev[receiverId] || [];
-          return { ...prev, [receiverId]: [...userMessages, msg] };
-        });
+        
       }
     } catch (error) {
       console.error("Failed to send message:", error);
       toast.error("Failed to send message");
     }
   };
+
+
+  
 
   const value = {
     backendUrl,
@@ -204,6 +209,7 @@ export const AdminContextProvider = ({ children }) => {
     fetchedUsers,
     fetchUser,
     unreadCount,
+    setMessagesMap,
     logout,
     setLoading,
     onlineUsers,
