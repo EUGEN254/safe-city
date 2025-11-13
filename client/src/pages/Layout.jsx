@@ -44,7 +44,7 @@ const Layout = () => {
       <div className="flex-1 flex flex-col min-w-0">
         <UserNavbar onMenuToggle={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)} />
 
-        <div className="flex-1 overflow-auto outlet-scroll">
+        <div className="flex-1 overflow-auto no-scrollbar">
           <div className="w-full p-3 max-w-full">
             <Outlet />
           </div>

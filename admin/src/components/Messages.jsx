@@ -37,11 +37,12 @@ const Messages = () => {
   } = useAdmin();
 
   const users = fetchedUsers || [];
+  
   useEffect(() => {
     fetchUser();
   }, []);
 
-  // Fetch messages when activeUser changes
+  // Fetch messages when selectedUser changes
   useEffect(() => {
     const fetchMessages = async () => {
       if (!selectedUser || !admin) return;
@@ -53,7 +54,6 @@ const Messages = () => {
         );
 
         if (res.data.success) {
-          // Update messagesMap with the fetched messages
           setMessagesMap((prev) => ({
             ...prev,
             [selectedUser.id]: res.data.data,
@@ -67,16 +67,15 @@ const Messages = () => {
     fetchMessages();
   }, [selectedUser, admin, backendUrl]);
 
-  // Auto-scroll to bottom
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
-
-  // Scroll whenever messages for selectedUser change
-  const currentMessages = selectedUser
-    ? messagesMap[selectedUser.id] || []
-    : [];
-  useEffect(scrollToBottom, [currentMessages]);
+  // FIXED: Improved scroll behavior
+  useEffect(() => {
+    if (messagesEndRef.current && selectedUser) {
+      messagesEndRef.current.scrollIntoView({ 
+        behavior: "smooth",
+        block: "nearest"
+      });
+    }
+  }, [messagesMap[selectedUser?.id], selectedUser]);
 
   // Close mobile overlays when user is selected
   useEffect(() => {
@@ -117,9 +116,12 @@ const Messages = () => {
     online: isUserOnline(user._id),
   }));
 
+  // Get current messages for selected user
+  const currentMessages = selectedUser ? messagesMap[selectedUser.id] || [] : [];
+
   return (
-    <div className="min-h-screen ">
-      {/* Mobile Header */}
+    <div className="min-h-screen bg-inherit pt-2">
+      {/* Mobile Header - FIXED: Removed fixed positioning */}
       <div className="lg:hidden bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-4 flex items-center justify-between">
         <button
           onClick={() => setIsSidebarOpen(true)}
@@ -330,8 +332,9 @@ const Messages = () => {
         </div>
       )}
 
-      <div className="max-w-7xl mx-auto">
-        <div className="flex h-screen lg:h-[calc(100vh-2rem)] m-4 rounded-3xl overflow-hidden bg-white dark:bg-gray-800 shadow-2xl border border-gray-100 dark:border-gray-700">
+      {/* Main Content Area */}
+      <div className="max-w-7xl mx-auto lg:pt-4">
+        <div className="flex h-[calc(100vh-5rem)] lg:h-[calc(100vh-2rem)] m-2 lg:m-4 rounded-3xl overflow-hidden bg-white dark:bg-gray-800 shadow-2xl border border-gray-100 dark:border-gray-700">
           {/* Users Sidebar - Hidden on mobile */}
           <div className="hidden lg:flex w-full md:w-1/4 lg:w-1/4 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 p-6 flex flex-col">
             <div className="flex items-center justify-between mb-6">

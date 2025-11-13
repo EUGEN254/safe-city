@@ -24,6 +24,7 @@ const ChatSupport = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const scrollRef = useRef();
+  const messagesEndRef = useRef();
 
   const {
     supportTeam,
@@ -66,9 +67,15 @@ const ChatSupport = () => {
     fetchMessages();
   }, [activeUser, user]);
 
-  // Scroll to bottom whenever messages change
+  // Scroll to bottom whenever messages change - FIXED VERSION
   useEffect(() => {
-    scrollRef.current?.scrollIntoView({ behavior: "smooth" });
+    // Only scroll if we're at the bottom or it's a new message
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ 
+        behavior: "smooth",
+        block: "nearest"
+      });
+    }
   }, [messagesMap[activeUser?._id]]);
 
   // Set first user when role is selected
@@ -193,7 +200,7 @@ const ChatSupport = () => {
 
   if (!supportTeam || Object.keys(supportTeam).length === 0) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 pt-16">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
           <p className="text-gray-600 dark:text-gray-400">Loading support team...</p>
@@ -203,9 +210,9 @@ const ChatSupport = () => {
   }
 
   return (
-    <div className="min-h-screen bg-inherit">
+    <div className="min-h-screen bg-inherit pt-2"> 
       {/* Mobile Header */}
-      <div className="lg:hidden bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-4 flex items-center justify-between">
+      <div className="lg:hidden bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-4 flex items-center justify-between fixed top-0 left-0 right-0 z-40">
         <button
           onClick={() => setIsSidebarOpen(true)}
           className="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
@@ -272,7 +279,7 @@ const ChatSupport = () => {
                 })}
               </div>
             ) : (
-              <div className="p-4">
+              <div className="p-4 no-scrollbar">
                 <div className="flex items-center justify-between mb-4">
                   <button
                     onClick={() => {
@@ -280,14 +287,14 @@ const ChatSupport = () => {
                       setActiveUser(null);
                       setSearchTerm("");
                     }}
-                    className="flex items-center gap-2 text-blue-600 dark:text-blue-300 hover:text-blue-700 dark:hover:text-blue-400"
+                    className="flex text-xs items-center gap-2 text-blue-600 dark:text-blue-300 hover:text-blue-700 dark:hover:text-blue-400"
                   >
                     <FiArrowLeft /> Back
                   </button>
                   <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">{getRoleDisplayName(selectedRole)}</h2>
                 </div>
                 
-                <div className="relative mb-4">
+                <div className="relative w-full mb-4">
                   <FiSearch className="absolute left-3 top-3 text-gray-400" />
                   <input
                     type="text"
@@ -364,9 +371,9 @@ const ChatSupport = () => {
         </div>
       )}
 
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-7xl mx-auto lg:pt-4">
         {!selectedRole ? (
-          <div className="flex flex-col items-center justify-center min-h-screen px-4 py-8">
+          <div className="flex flex-col items-center justify-center min-h-[calc(10vh-4rem)] px-4 py-8">
             <div className="bg-white dark:bg-gray-800 shadow-2xl rounded-3xl p-8 w-full max-w-md border border-gray-100 dark:border-gray-700">
               <h2 className="text-2xl font-bold text-center mb-6 text-gray-800 dark:text-white">
                 Who would you like to chat with?
@@ -402,7 +409,7 @@ const ChatSupport = () => {
             </div>
           </div>
         ) : (
-          <div className="flex h-screen lg:h-[calc(100vh-2rem)] m-4 rounded-3xl overflow-hidden bg-white dark:bg-gray-800 shadow-2xl border border-gray-100 dark:border-gray-700">
+          <div className="flex h-[calc(100vh-5rem)] lg:h-[calc(100vh-2rem)] m-2 lg:m-4 rounded-3xl overflow-hidden bg-white dark:bg-gray-800 shadow-2xl border border-gray-100 dark:border-gray-700">
             {/* Sidebar - Hidden on mobile */}
             <div className="hidden lg:flex w-full md:w-1/3 lg:w-1/4 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 p-6 flex flex-col">
               <div className="flex items-center justify-between mb-6">
@@ -432,7 +439,7 @@ const ChatSupport = () => {
                 />
               </div>
 
-              <div className="flex-1 overflow-y-auto space-y-3">
+              <div className="flex-1 overflow-y-auto no-scrollbar space-y-3">
                 {filteredUsers.length > 0 ? (
                   filteredUsers.map((u) => {
                     const status = getOnlineStatus(u._id);
@@ -471,7 +478,7 @@ const ChatSupport = () => {
             </div>
 
             {/* Chat Area */}
-            <div className="flex-1 w-10 flex flex-col bg-gray-50 dark:bg-gray-900">
+            <div className="flex-1 flex flex-col bg-gray-50 dark:bg-gray-900">
               {activeUser ? (
                 <>
                   <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
@@ -495,7 +502,7 @@ const ChatSupport = () => {
 
                   <div className="flex-1 overflow-y-auto p-3 space-y-4 no-scrollbar">
                     {(messagesMap[activeUser._id] || []).map((msg) => (
-                      <div key={msg._id} ref={scrollRef} className={`flex ${msg.senderId === activeUser._id ? "justify-start" : "justify-end"}`}>
+                      <div key={msg._id} className={`flex ${msg.senderId === activeUser._id ? "justify-start" : "justify-end"}`}>
                         <div className={`max-w-xs lg:max-w-md px-4 py-3 rounded-2xl ${
                           msg.senderId === activeUser._id 
                             ? "bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm border border-gray-100 dark:border-gray-600" 
@@ -509,6 +516,8 @@ const ChatSupport = () => {
                         </div>
                       </div>
                     ))}
+                    {/* Add this empty div for scrolling to bottom */}
+                    <div ref={messagesEndRef} />
                   </div>
 
                   <div className="p-2 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
