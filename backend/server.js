@@ -12,6 +12,8 @@ import adminRouter from "./routes/adminRoutes.js";
 import messageRouter from "./routes/messageRoutes.js";
 import { Server } from "socket.io";
 import dashBoardRouter from "./routes/dashboard.js";
+import NotificationRouter from "./routes/notification.js";
+import conversationsRouter from "./routes/conversations.js";
 
 /** ------------------- EXPRESS SETUP ------------------- **/
 const app = express();
@@ -43,6 +45,8 @@ app.use("/api/reports", reportRouter);
 app.use("/api/settings", settingsRouter);
 app.use("/api/messages", messageRouter);
 app.use("/api/dashboard", dashBoardRouter);
+app.use("/api/notifications", NotificationRouter);
+app.use("/api/messages", conversationsRouter);
 
 // Connect MongoDB
 await connectDB();
