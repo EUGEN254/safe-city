@@ -70,7 +70,6 @@ body::-webkit-scrollbar { display: none; }
   width: 8px;
   height: 8px;
 }
-
 .outlet-scroll::-webkit-scrollbar-track {
   background: var(--color-surface);
   border-radius: 8px;
@@ -87,6 +86,8 @@ body::-webkit-scrollbar { display: none; }
 .outlet-scroll::-webkit-scrollbar-thumb:hover {
   background: var(--color-accent-hover);
 }
+
+
 
 /* ==========================
    Popover / Nav

@@ -182,8 +182,8 @@ const Messages = () => {
               </div>
             </div>
 
-            {/* Users list */}
-            <div className="p-4 space-y-2 max-h-[calc(100vh-140px)] overflow-y-auto">
+            {/* Users list  */}
+            <div className="p-4 space-y-2 max-h-[calc(100vh-140px)] overflow-y-auto outlet-scroll">
               {loading ? (
                 <div className="flex flex-col items-center justify-center py-8 text-gray-500 dark:text-gray-400">
                   <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500 mb-2"></div>
@@ -264,7 +264,7 @@ const Messages = () => {
                 <FiX size={20} />
               </button>
             </div>
-            <div className="p-6">
+            <div className="p-1">
               <div className="flex flex-col items-center text-center">
                 <div className="relative mb-4">
                   <div className="w-20 h-20 bg-gradient-to-br from-blue-600 to-blue-700 rounded-full flex items-center justify-center text-white font-semibold text-2xl">
@@ -364,8 +364,8 @@ const Messages = () => {
               />
             </div>
 
-            {/* Users list */}
-            <div className="flex-1 overflow-y-auto no-scrollbar space-y-3">
+            {/* Users list - UPDATED: Added custom scrollbar */}
+            <div className="flex-1 overflow-y-auto outlet-scroll space-y-3">
               {loading ? (
                 <div className="flex flex-col items-center justify-center py-8 text-gray-500 dark:text-gray-400">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mb-3"></div>

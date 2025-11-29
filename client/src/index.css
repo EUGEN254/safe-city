@@ -62,41 +62,22 @@ body::-webkit-scrollbar {
 }
 
 
-/* Add this to your global CSS */
-.no-scrollbar {
-  -ms-overflow-style: none;  /* IE and Edge */
-  scrollbar-width: none;     /* Firefox */
+
+/* scrollbar for outlet */
+.outlet-scroll::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
 }
 
-.no-scrollbar::-webkit-scrollbar {
-  display: none; /* Chrome, Safari and Opera */
+.outlet-scroll::-webkit-scrollbar-track {
+  background: var(--color-surface);
+  border-radius: 8px;
 }
-
-.outlet-scroll {
-  height: 100%;
-  overflow: auto;
-}
-
-
-/* scrollabr for outlet */
-.outlet-scroll::-webkit-scrollbar{
-  width:10px;
-  height:10px;
-}
-
-.outlet-scroll::-webkit-scrollabar-track{
-  background:var(---color-surface);
-  border-radius:8px;
-}
-
-
-.scrollbar-thin::-webkit-scrollbar { width: 2px; }
-
 
 .outlet-scroll::-webkit-scrollbar-thumb {
   background: var(--color-accent);
   border-radius: 8px;
-  border: 2px solid transparent; /* gives padding around the thumb */
+  border: 2px solid transparent;
   background-clip: padding-box;
 }
 
@@ -105,22 +86,32 @@ body::-webkit-scrollbar {
   background: var(--color-accent-hover);
 }
 
-/* add subtle shadow on the track  */
+/* add subtle shadow on the track */
 .outlet-scroll::-webkit-scrollbar-track {
   box-shadow: inset 0 0 4px rgba(0,0,0,0.25);
 }
 
-
 /* Firefox */
 .outlet-scroll {
-  scrollbar-width: thin; /* "auto" | "thin" | "none" */
-  scrollbar-color: var(--color-accent) var(--color-surface); /* thumb then track */
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-accent) var(--color-surface);
 }
 
-/* Accessibility: focus-visible outline when keyboard scrolling the container */
-.outlet-scroll:focus {
-  outline: 2px solid rgba(230,57,70,0.12);
-  outline-offset: 2px;
+/* Light mode support */
+.light-mode .outlet-scroll::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+.light-mode .outlet-scroll::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+}
+
+.light-mode .outlet-scroll::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+.light-mode .outlet-scroll {
+  scrollbar-color: #cbd5e1 #f1f5f9;
 }
 
 body.light-mode {
