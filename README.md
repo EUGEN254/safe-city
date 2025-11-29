@@ -42,29 +42,28 @@ SafeCity is a comprehensive community safety platform designed to empower citize
 
 ## 🏗️ Project Structure
 
-safecity/
-├── client/ # React Frontend (User App)
-│ └── src/
-│ ├── components/ # Shared UI components
-│ ├── pages/ # Application pages
-│ ├── context/ # Global state management
-│ └── utils/ # Helper functions
+    safecity/
+    ├── client/ # React Frontend (User App)
+    │ └── src/
+    │ ├── components/ # Shared UI components
+    │ ├── pages/ # Application pages
+    │ ├── context/ # Global state management
+    │ └── utils/ # Helper functions
 
-├── admin/ # Admin Dashboard (React)
-│ └── src/
-│ ├── components/ # Admin components
-│ ├── pages/ # Admin pages
-│ └── context/ # Admin context providers
+    ├── admin/ # Admin Dashboard (React)
+    │ └── src/
+    │ ├── components/ # Admin components
+    │ ├── pages/ # Admin pages
+    │ └── context/ # Admin context providers
 
-└── backend/ # Node.js API Server
-├── controllers/ # Route logic handlers
-├── models/ # MongoDB models
-├── routes/ # API endpoints
-├── middleware/ # Auth & request middleware
-└── utils/ # Utility scripts
+    └── backend/ # Node.js API Server
+    ├── controllers/ # Route logic handlers
+    ├── models/ # MongoDB models
+    ├── routes/ # API endpoints
+    ├── middleware/ # Auth & request middleware
+    └── utils/ # Utility scripts
 
-yaml
-Copy code
+
 
 ---
 
