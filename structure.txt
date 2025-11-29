@@ -1,0 +1,131 @@
+.
+├── admin
+│   ├── eslint.config.js
+│   ├── index.html
+│   ├── package.json
+│   ├── package-lock.json
+│   ├── public
+│   │   └── favicon.svg
+│   ├── README.md
+│   ├── src
+│   │   ├── App.jsx
+│   │   ├── assets
+│   │   │   └── react.svg
+│   │   ├── components
+│   │   │   ├── Dashboard.jsx
+│   │   │   ├── Messages.jsx
+│   │   │   ├── Navbar.jsx
+│   │   │   ├── NotFound.jsx
+│   │   │   └── Sidebar.jsx
+│   │   ├── context
+│   │   │   └── AdminContext.jsx
+│   │   ├── index.css
+│   │   ├── main.jsx
+│   │   └── pages
+│   │       ├── Layout.jsx
+│   │       └── LoginSignUp.jsx
+│   ├── vercel.json
+│   └── vite.config.js
+├── backend
+│   ├── configs
+│   │   ├── cloudinary.js
+│   │   ├── connectDB.js
+│   │   └── new.js
+│   ├── controllers
+│   │   ├── admin.js
+│   │   ├── dashboard.js
+│   │   ├── emailTemplates.js
+│   │   ├── message.js
+│   │   ├── report.js
+│   │   ├── settings.js
+│   │   └── user.js
+│   ├── middleware
+│   │   ├── upload.js
+│   │   └── userAuth.js
+│   ├── models
+│   │   ├── messages.js
+│   │   ├── notification.js
+│   │   ├── privacy.js
+│   │   ├── report.js
+│   │   └── user.js
+│   ├── package.json
+│   ├── package-lock.json
+│   ├── routes
+│   │   ├── adminRoutes.js
+│   │   ├── conversations.js
+│   │   ├── dashboard.js
+│   │   ├── messageRoutes.js
+│   │   ├── notification.js
+│   │   ├── reportRoutes.js
+│   │   ├── settingRoutes.js
+│   │   └── userRoutes.js
+│   ├── server.js
+│   └── utils
+│       ├── cloudinaryHelpers.js
+│       ├── dashboardUtils.js
+│       ├── emailService.js
+│       ├── fileHelpers.js
+│       └── generateToken.js
+├── client
+│   ├── eslint.config.js
+│   ├── index.html
+│   ├── package.json
+│   ├── package-lock.json
+│   ├── public
+│   │   └── favicon.svg
+│   ├── README.md
+│   ├── src
+│   │   ├── App.jsx
+│   │   ├── assets
+│   │   │   ├── assets.js
+│   │   │   ├── avatar_icon.png
+│   │   │   ├── fire.jpg
+│   │   │   ├── flooding.jpg
+│   │   │   ├── map.jpg
+│   │   │   ├── pic1.png
+│   │   │   ├── pic2.png
+│   │   │   ├── pic3.png
+│   │   │   ├── pic4.png
+│   │   │   ├── profile_alison copy.png
+│   │   │   ├── profile_alison.png
+│   │   │   ├── profile_marco.png
+│   │   │   ├── profile_martin.png
+│   │   │   ├── profile_richard.png
+│   │   │   └── road.jpg
+│   │   ├── components
+│   │   │   ├── Footer.jsx
+│   │   │   ├── Header.jsx
+│   │   │   ├── HowItWorks.jsx
+│   │   │   ├── LoginSignUp.jsx
+│   │   │   ├── MapView.jsx
+│   │   │   ├── Navbar.jsx
+│   │   │   ├── NotFound.jsx
+│   │   │   ├── Reports.jsx
+│   │   │   └── userComponents
+│   │   │       ├── ChatSupport.jsx
+│   │   │       ├── Dashboard.jsx
+│   │   │       ├── EmergencyContacts.jsx
+│   │   │       ├── HelpCenter.jsx
+│   │   │       ├── MyReports.jsx
+│   │   │       ├── NearbySafetyServices.jsx
+│   │   │       ├── Notifications.jsx
+│   │   │       ├── Profile.jsx
+│   │   │       ├── Report.jsx
+│   │   │       ├── SafetyTips.jsx
+│   │   │       ├── Settings.jsx
+│   │   │       ├── Sidebar.jsx
+│   │   │       └── UserNavbar.jsx
+│   │   ├── context
+│   │   │   └── SafeCity.jsx
+│   │   ├── index.css
+│   │   ├── main.jsx
+│   │   ├── pages
+│   │   │   ├── LandingPage.jsx
+│   │   │   └── Layout.jsx
+│   │   └── utils
+│   │       └── mapUtils.js
+│   ├── vercel.json
+│   └── vite.config.js
+└── structure.txt
+
+24 directories, 105 files
